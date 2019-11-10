@@ -82,12 +82,17 @@ char **parse_file_lines(const char *pathname)
     return video_files;
 }
 
+void display_usage(char *progname)
+{
+    printf("usage:\n$ %s infile\n", progname);
+}
 
 int main (int argc, char **argv)
 {
     char **video_files = NULL;
 
     if (argc != 2) {
+        display_usage(argv[0]);
         exit(EXIT_FAILURE);
     }
 
