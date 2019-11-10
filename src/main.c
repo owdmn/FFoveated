@@ -63,7 +63,7 @@ char **parse_file_lines(const char *pathname)
 
     /* separate and copy filenames into null-terminated strings */
     while (fgets(line_buf, PATH_MAX, fp)) {
-        if(newline = strchr(line_buf, '\n')) {
+        if((newline = strchr(line_buf, '\n'))) {
             *newline = '\0'; // remove trailing newline
         }
 
