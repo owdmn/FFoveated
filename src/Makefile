@@ -1,17 +1,24 @@
+# Path to FFmpeg
+FFMPEG = /path/to/FFmpeg/**
+
 CC = gcc
-CFLAGS= -I/path/to/FFmpeg/**
-LDFLAGS= -L/path/to/FFmpeg/** -lavutil -lavcodec -lavdevice
+CFLAGS= -I$(FFMPEG) -Wall -Wextra -Wpedantic
+LDFLAGS= -L$(FFMPEG) -lavutil -lavcodec -lavdevice
 
 .PHONY: clean
 
-%.o: %.c $(DEPS)
-	$(CC) -g -c -o $@ $<  $(CFLAGS)
+all: main
+
+debug: CFLAGS += -g -pg
+debug: LDFLAGS += -pg
+debug: all
+
+%.o: %.c
+	$(CC) -c $(CFLAGS) -o $@ $<
 
 main: main.o
-	$(CC) -g -o $@ $^ $(CFLAGS) $(LDFLAGS)
-
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 clean:
-	rm *.o main
-
+	rm main *.o *.out
 
