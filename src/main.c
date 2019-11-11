@@ -66,18 +66,14 @@ char **parse_file_lines(const char *pathname)
 	int size;
 
 	fp = fopen(pathname, "r");
-	if (!fp) {
-		perror("Error: fopen failed.");
-		exit(EXIT_FAILURE);
-	}
+	if (!fp)
+		pexit("fopen failed");
 
 	size = 32; //initial allocation
 	used =	0;
 	lines = malloc(size * sizeof(char *));
-	if (!lines) {
-		perror("Error: malloc failed.");
-		exit(EXIT_FAILURE);
-	}
+	if (!lines)
+		pexit("malloc failed");
 
 	/* separate and copy filenames into null-terminated strings */
 	while (fgets(line_buf, PATH_MAX, fp)) {
@@ -90,10 +86,8 @@ char **parse_file_lines(const char *pathname)
 		if (used == size) {
 			size = size*2;
 			lines = realloc(lines, size * sizeof(char *));
-			if (!lines) {
-				perror("Error: realloc failed.");
-				exit(EXIT_FAILURE);
-			}
+			if (!lines)
+				pexit("realloc failed");
 		}
 	}
 	lines[used] = NULL;		//termination symbol
