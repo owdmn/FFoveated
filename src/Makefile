@@ -26,5 +26,5 @@ checkpatch:
 	perl $(CHECKPATCH) $(CPFLAGS) *.c *.h
 
 clean:
-	rm main *.o *.out
+	rm -f main *.o *.out
 
