@@ -84,7 +84,7 @@ char **parse_file_lines(const char *pathname)
 
 void display_usage(char *progname)
 {
-    printf("usage:\n$ %s infile\n", progname);
+	printf("usage:\n$ %s infile\n", progname);
 }
 
 int main (int argc, char **argv)
