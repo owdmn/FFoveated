@@ -77,7 +77,7 @@ char **parse_file_lines(const char *pathname)
 			}
 		}
 	}
-	lines[used] = NULL; 	//termination symbol
+	lines[used] = NULL;		//termination symbol
 
 	return lines;
 }
