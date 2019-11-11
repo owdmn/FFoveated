@@ -87,19 +87,17 @@ void display_usage(char *progname)
 	printf("usage:\n$ %s infile\n", progname);
 }
 
-int main (int argc, char **argv)
+int main(int argc, char **argv)
 {
-    char **video_files = NULL;
+	char **video_files = NULL;
 
-    if (argc != 2) {
-        display_usage(argv[0]);
-        exit(EXIT_FAILURE);
-    }
+	if (argc != 2) {
+		display_usage(argv[0]);
+		exit(EXIT_FAILURE);
+	}
 
-    video_files = parse_file_lines(argv[1]);
+	video_files = parse_file_lines(argv[1]);
 
-    for (int i=0; video_files[i]; i++) {
-        printf("video_files[i]: %s\n", video_files[i]);
-    }
-
+	for (int i = 0; video_files[i]; i++)
+		printf("video_files[i]: %s\n", video_files[i]);
 }
