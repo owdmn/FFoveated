@@ -24,6 +24,25 @@
 #include <stdlib.h>
 #include <string.h>
 
+/**
+ * Print formatted error message referencing the affeted source file,
+ * line and the errno status through perror, then exit with EXIT_FAILURE.
+ * Can be used through the pexit macro for comfort.
+ *
+ * @param msg error message
+ * @param file usually the __FILE__ macro
+ * @param line usually the __LINE__ macro
+ */
+void pexit_(const char *msg, const char *file, const int line)
+{
+	char buf[1024];
+
+	snprintf(buf, sizeof(buf), "%s:%d: %s", file, line, msg);
+	perror(buf);
+	exit(EXIT_FAILURE);
+}
+#define pexit(s) pexit_(s, __FILE__, __LINE__)
+
 
 /**
  * Parse a file line by line, return an array of char* pointers
