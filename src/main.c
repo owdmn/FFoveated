@@ -39,47 +39,47 @@
  */
 char **parse_file_lines(const char *pathname)
 {
-    FILE *fp;
-    char line_buf[PATH_MAX];
-    char *newline;
-    char **video_files;
-    int used;
-    int size;
+	FILE *fp;
+	char line_buf[PATH_MAX];
+	char *newline;
+	char **lines;
+	int used;
+	int size;
 
-    fp = fopen(pathname, "r");
-    if (!fp) {
-        perror("Error: fopen failed in parse_files_lines: ");
-        exit(EXIT_FAILURE);
-    }
+	fp = fopen(pathname, "r");
+	if (!fp) {
+		perror("Error: fopen failed.");
+		exit(EXIT_FAILURE);
+	}
 
-    size = 32; // initial allocation
-    used =  0;
-    video_files = malloc(size * sizeof(char*));
-    if (!video_files) {
-        perror("Error: malloc() failes in parse_file_lines: ");
-        exit(EXIT_FAILURE);
-    }
+	size = 32; //initial allocation
+	used =	0;
+	lines = malloc(size * sizeof(char *));
+	if (!lines) {
+		perror("Error: malloc failed.");
+		exit(EXIT_FAILURE);
+	}
 
-    /* separate and copy filenames into null-terminated strings */
-    while (fgets(line_buf, PATH_MAX, fp)) {
-        if((newline = strchr(line_buf, '\n'))) {
-            *newline = '\0'; // remove trailing newline
-        }
+	/* separate and copy filenames into null-terminated strings */
+	while (fgets(line_buf, PATH_MAX, fp)) {
+		newline = strchr(line_buf, '\n');
+		if (newline)
+			*newline = '\0';	//remove trailing newline
 
-        video_files[used] = strdup(line_buf);
-        used++;
-        if (used == size) {
-            size = size*2;
-            video_files = realloc(video_files, size * sizeof(char*));
-            if (!video_files) {
-                perror("Error: realloc failed in parse_file_lines: ");
-                exit(EXIT_FAILURE);
-            }
-        }
-    }
-    video_files[used] = NULL; //termination symbol
+		lines[used] = strdup(line_buf);
+		used++;
+		if (used == size) {
+			size = size*2;
+			lines = realloc(lines, size * sizeof(char *));
+			if (!lines) {
+				perror("Error: realloc failed.");
+				exit(EXIT_FAILURE);
+			}
+		}
+	}
+	lines[used] = NULL; 	//termination symbol
 
-    return video_files;
+	return lines;
 }
 
 void display_usage(char *progname)
