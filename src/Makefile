@@ -6,7 +6,7 @@ CHECKPATCH = /path/to/checkpatch.pl
 CPFLAGS = --no-tree --no-signoff -f --ignore NEW_TYPEDEFS,AVOID_EXTERNS,SPDX_LICENSE_TAG
 CC = gcc
 CFLAGS= -I$(FFMPEG) -Wall -Wextra -Wpedantic
-LDFLAGS= -L$(FFMPEG) -lavutil -lavcodec -lavdevice
+LDFLAGS= -L$(FFMPEG) -lavutil -lavcodec -lavdevice -lSDL
 
 .PHONY: clean checkpatch
 
