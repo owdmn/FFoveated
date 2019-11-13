@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <SDL2/SDL.h>
 
 /**
  * Print formatted error message referencing the affeted source file,
@@ -113,4 +114,9 @@ int main(int argc, char **argv)
 
 	for (int i = 0; video_files[i]; i++)
 		printf("video_files[i]: %s\n", video_files[i]);
+
+	if (SDL_Init(SDL_INIT_VIDEO))
+		pexit("SDL_Init failed");
+
+	return EXIT_SUCCESS;
 }
