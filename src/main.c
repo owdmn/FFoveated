@@ -25,75 +25,55 @@
 #include <string.h>
 #include <SDL2/SDL.h>
 
-/**
- * Print formatted error message referencing the affeted source file,
- * line and the errno status through perror, then exit with EXIT_FAILURE.
- * Can be used through the pexit macro for comfort.
- *
- * @param msg error message
- * @param file usually the __FILE__ macro
- * @param line usually the __LINE__ macro
- */
-void pexit_(const char *msg, const char *file, const int line)
-{
-	char buf[1024];
 
-	snprintf(buf, sizeof(buf), "%s:%d: %s", file, line, msg);
-	perror(buf);
-	exit(EXIT_FAILURE);
-}
-#define pexit(s) pexit_(s, __FILE__, __LINE__)
 
 
 /**
- * Parse a file line by line, return an array of char* pointers
  *
- * At most PATH_MAX characters per line are supported, the main purpose
- * is to parse a file containing pathnames.
- * Each line is sanitized: A trailing newline characters are replaced
- * with a nullbyte. The returned pointer array is also NULL terminated.
- * All contained pointers and the array itself must be passed to free()
- *
- * @param pathname path to an ascii file to be opened and parsed
- * @return NULL-terminated array of char* to line contents
+ * @return int
  */
-char **parse_file_lines(const char *pathname)
+int file_reader(void *ptr)
 {
-	FILE *fp;
-	char line_buf[PATH_MAX];
-	char *newline;
-	char **lines;
-	int used;
-	int size;
+	file_reader_context *reader_ctx = (file_reader_context *) ptr;
+	int ret, stream_index;	/* index of the desired stream to select packages*/
+	AVFormatContext *format_ctx;
+	AVPacket pkt, *pkt_p;
 
-	fp = fopen(pathname, "r");
-	if (!fp)
-		pexit("fopen failed");
+	format_ctx = avformat_alloc_context();
+	if (!format_ctx)
+		pexit("avformat_alloc_context failed");
 
-	size = 32; //initial allocation
-	used =	0;
-	lines = malloc(size * sizeof(char *));
-	if (!lines)
-		pexit("malloc failed");
+	ret = avformat_open_input(&format_ctx, reader_ctx->filename, NULL, NULL);
+	if (ret < 0)
+		pexit("avformat_open_input failed");
 
-	/* separate and copy filenames into null-terminated strings */
-	while (fgets(line_buf, PATH_MAX, fp)) {
-		newline = strchr(line_buf, '\n');
-		if (newline)
-			*newline = '\0';	//remove trailing newline
+	stream_index = av_find_best_stream(format_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+	if (stream_index == AVERROR_STREAM_NOT_FOUND || stream_index == AVERROR_DECODER_NOT_FOUND)
+		pexit("video stream or decoder not found");
 
-		lines[used] = strdup(line_buf);
-		used++;
-		if (used == size) {
-			size = size*2;
-			lines = realloc(lines, size * sizeof(char *));
-			if (!lines)
-				pexit("realloc failed");
+
+	while (1) {
+		ret = av_read_frame(format_ctx, &pkt);
+		if (ret < 0) {
+			if (ret == AVERROR_EOF)
+				break;
+			else
+				pexit("av_read_frame returned error");
+		}
+
+		/* discard non-video packages */
+		if (pkt.stream_index != stream_index)
+			continue;
+
+		if (pkt.buf) {
+			pkt_p = malloc(sizeof(AVPacket));
+			av_copy_packet(pkt_p, &pkt);
+			enqueue(reader_ctx->packet_queue, pkt_p);
 		}
 	}
-	lines[used] = NULL;		//termination symbol
 
-	return lines;
+	avformat_close_input(&format_ctx);
+	return 0;
 }
 
 void display_usage(char *progname)
