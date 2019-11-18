@@ -36,7 +36,19 @@ typedef struct file_reader_context {
 
 
 /**
+ * Read a video file and put the contained AVPackets in a queue.
  *
+ * Open and demultiplex the file given in reader_ctx->filename.
+ * Identify the "best" video stream index, usually there will only be one.
+ * Call av_read_frame repeatedly. Filter the returned packets by their stream
+ * index, discarding everything but video packets, such as audio or subtitles.
+ * Enqueue video packets in reader_ctx->packet_queue.
+ * Upon EOF, enqueue a NULL pointer.
+ *
+ * This function is to be used through SDL_CreateThread.
+ * The resulting thread will block if reader_ctx->queue is full.
+ * Calls pexit in case of a failure.
+ * @param void *ptr will be cast to (file_reader_context *)
  * @return int
  */
 int file_reader(void *ptr)
@@ -58,7 +70,6 @@ int file_reader(void *ptr)
 	if (stream_index == AVERROR_STREAM_NOT_FOUND || stream_index == AVERROR_DECODER_NOT_FOUND)
 		pexit("video stream or decoder not found");
 
-
 	while (1) {
 		ret = av_read_frame(format_ctx, &pkt);
 		if (ret < 0) {
@@ -74,11 +85,12 @@ int file_reader(void *ptr)
 
 		if (pkt.buf) {
 			pkt_p = malloc(sizeof(AVPacket));
-			av_copy_packet(pkt_p, &pkt);
+			av_copy_packet(pkt_p, &pkt); //FIXME: deprecated in FFmpeg
 			enqueue(reader_ctx->packet_queue, pkt_p);
 		}
 	}
-
+	/* finally enqueue NULL to enter draining mode */
+	enqueue(reader_ctx->packet_queue, NULL);
 	avformat_close_input(&format_ctx);
 	return 0;
 }
