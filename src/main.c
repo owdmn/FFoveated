@@ -102,7 +102,9 @@ void display_usage(char *progname)
 
 int main(int argc, char **argv)
 {
-	char **video_files = NULL;
+	char **video_files;
+	file_reader_context reader_ctx;
+	SDL_Thread *reader_thread;
 
 	if (argc != 2) {
 		display_usage(argv[0]);
@@ -111,8 +113,14 @@ int main(int argc, char **argv)
 
 	video_files = parse_file_lines(argv[1]);
 
-	for (int i = 0; video_files[i]; i++)
-		printf("video_files[i]: %s\n", video_files[i]);
+	for (int i = 0; video_files[i]; i++) {
+
+		reader_ctx.filename = video_files[0];
+		reader_ctx.packet_queue = create_queue(32);
+		reader_thread = SDL_CreateThread(file_reader, "file_reader_thread", &reader_ctx);
+		SDL_WaitThread(reader_thread, NULL);
+		break; //DEMO
+	}
 
 	if (SDL_Init(SDL_INIT_VIDEO))
 		pexit("SDL_Init failed");
