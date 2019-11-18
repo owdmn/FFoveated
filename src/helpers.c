@@ -35,10 +35,7 @@ Queue *create_queue(size_t capacity)
 	if (!q)
 		pexit("malloc failed");
 
-	/*
-	 * allocate capacity+1 elements, as we utilize an empty element to signal
-	 * full/empty status information.
-	 */
+	// allocate one additional element for signalling
 	q->data = malloc((capacity+1) * sizeof(void *));
 	if (!q->data)
 		pexit("malloc failed");
@@ -48,11 +45,10 @@ Queue *create_queue(size_t capacity)
 	q->capacity = capacity;
 
 	q->mutex = SDL_CreateMutex();
-	q->full = SDL_CreateCond();
+	q->full  = SDL_CreateCond();
 	q->empty = SDL_CreateCond();
 	if (!(q->mutex && q->full && q->empty))
 		pexit("SDL_CreateMutex or SDL_CreateCond failed");
-
 	return q;
 }
 
@@ -95,7 +91,8 @@ void enqueue(Queue *q, void *data)
 
 }
 
-void *dequeue(Queue *q){
+void *dequeue(Queue *q)
+{
 	void *data;
 
 	if (SDL_LockMutex(q->mutex))

@@ -27,12 +27,13 @@
 #include <libavformat/avformat.h>
 #include "helpers.h"
 
+/**
+ * Container passed to file_reader through SDL_CreateThread
+ */
 typedef struct file_reader_context {
 	char *filename;
 	Queue *packet_queue;
 } file_reader_context;
-
-
 
 
 /**
@@ -73,10 +74,10 @@ int file_reader(void *ptr)
 	while (1) {
 		ret = av_read_frame(format_ctx, &pkt);
 		if (ret < 0) {
-			if (ret == AVERROR_EOF)
-				break;
-			else
+			if (ret != AVERROR_EOF)
 				pexit("av_read_frame returned error");
+			else
+				break;
 		}
 
 		/* discard non-video packages */
