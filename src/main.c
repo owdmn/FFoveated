@@ -24,6 +24,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <SDL2/SDL.h>
+#include <libavformat/avformat.h>
+#include "helpers.h"
+
+typedef struct file_reader_context {
+	char *filename;
+	Queue *packet_queue;
+} file_reader_context;
 
 
 
