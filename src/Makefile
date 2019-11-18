@@ -19,7 +19,7 @@ debug: all
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 
-main: main.o
+main: main.o helpers.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 checkpatch:
