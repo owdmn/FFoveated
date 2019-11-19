@@ -71,6 +71,8 @@ int file_reader(void *ptr)
 	if (stream_index == AVERROR_STREAM_NOT_FOUND || stream_index == AVERROR_DECODER_NOT_FOUND)
 		pexit("video stream or decoder not found");
 
+	format_ctx->streams[stream_index]->discard = AVDISCARD_DEFAULT;
+
 	while (1) {
 		ret = av_read_frame(format_ctx, &pkt);
 		if (ret == AVERROR_EOF)
