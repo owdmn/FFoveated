@@ -73,12 +73,10 @@ int file_reader(void *ptr)
 
 	while (1) {
 		ret = av_read_frame(format_ctx, &pkt);
-		if (ret < 0) {
-			if (ret != AVERROR_EOF)
-				pexit("av_read_frame returned error");
-			else
-				break;
-		}
+		if (ret == AVERROR_EOF)
+			break;
+		else if (ret < 0)
+			pexit("av_read_frame failed");
 
 		/* discard non-video packages */
 		if (pkt.stream_index != stream_index)
