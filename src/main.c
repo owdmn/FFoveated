@@ -27,12 +27,11 @@
 #include <libavformat/avformat.h>
 #include "helpers.h"
 
-/**
- * Container passed to reader_thread through SDL_CreateThread
- */
+// Passed to reader_thread through SDL_CreateThread
 typedef struct reader_context {
 	char *filename;
 	Queue *packet_queue;
+	AVFormatContext *format_ctx;
 } reader_context;
 
 /**
@@ -53,31 +52,26 @@ typedef struct reader_context {
  */
 int reader_thread(void *ptr)
 {
-	reader_context *reader_ctx = (reader_context *) ptr;
+	reader_context *r_ctx = (reader_context *) ptr;
 	int ret, stream_index;	/* index of the desired stream to select packages*/
-	AVFormatContext *format_ctx;
 	AVPacket *pkt;
 
-	format_ctx = avformat_alloc_context();
-	if (!format_ctx)
-		pexit("avformat_alloc_context failed");
-
-	ret = avformat_open_input(&format_ctx, reader_ctx->filename, NULL, NULL);
+	ret = avformat_open_input(&r_ctx->format_ctx, r_ctx->filename, NULL, NULL);
 	if (ret < 0)
 		pexit("avformat_open_input failed");
 
-	stream_index = av_find_best_stream(format_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+	stream_index = av_find_best_stream(r_ctx->format_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
 	if (stream_index == AVERROR_STREAM_NOT_FOUND || stream_index == AVERROR_DECODER_NOT_FOUND)
 		pexit("video stream or decoder not found");
 
-	format_ctx->streams[stream_index]->discard = AVDISCARD_DEFAULT;
+	r_ctx->format_ctx->streams[stream_index]->discard = AVDISCARD_DEFAULT;
 
 	while (1) {
 		pkt = malloc(sizeof(AVPacket));
 		if (!pkt)
 			pexit("malloc failed");
 
-		ret = av_read_frame(format_ctx, pkt);
+		ret = av_read_frame(r_ctx->format_ctx, pkt);
 		if (ret == AVERROR_EOF)
 			break;
 		else if (ret < 0)
@@ -88,11 +82,11 @@ int reader_thread(void *ptr)
 			av_packet_free(&pkt);
 			continue;
 		}
-		enqueue(reader_ctx->packet_queue, pkt);
+		enqueue(r_ctx->packet_queue, pkt);
 	}
 	/* finally enqueue NULL to enter draining mode */
-	enqueue(reader_ctx->packet_queue, NULL);
-	avformat_close_input(&format_ctx);
+	enqueue(r_ctx->packet_queue, NULL);
+	avformat_close_input(&r_ctx->format_ctx); //FIXME: Is it reasonable to call this here already?
 	return 0;
 }
 
@@ -101,10 +95,39 @@ void display_usage(char *progname)
 	printf("usage:\n$ %s infile\n", progname);
 }
 
+
+/**
+ * Create and initialize a reader_context struct.
+ *
+ * Calls pexit in case of a failure.
+ * @param filename the file the reader thread will try to open
+ * @return reader_context* to a heap-allocated instance.
+ */
+reader_context *create_reader_context(char *filename)
+{
+	reader_context *r;
+	size_t queue_capacity = 64;
+
+	r = malloc(sizeof(reader_context));
+	if (!r)
+		pexit("malloc failed");
+
+	r->filename = filename;
+	r->packet_queue = create_queue(queue_capacity);
+	r->format_ctx = avformat_alloc_context();
+	if (!r->format_ctx)
+		pexit("avformat_alloc_context failed");
+
+	return r;
+}
+
+
+
+
 int main(int argc, char **argv)
 {
 	char **video_files;
-	reader_context reader_ctx;
+	reader_context *r_ctx;;
 	SDL_Thread *reader;
 
 	if (argc != 2) {
@@ -116,9 +139,11 @@ int main(int argc, char **argv)
 
 	for (int i = 0; video_files[i]; i++) {
 
-		reader_ctx.filename = video_files[0];
-		reader_ctx.packet_queue = create_queue(32);
-		reader = SDL_CreateThread(reader_thread, "reader_thread", &reader_ctx);
+		r_ctx = create_reader_context(video_files[0]);
+		reader = SDL_CreateThread(reader_thread, "reader_thread", &r_ctx);
+
+
+
 		SDL_WaitThread(reader, NULL);
 		break; //DEMO
 	}
