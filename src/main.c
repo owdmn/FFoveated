@@ -85,10 +85,10 @@ int reader_thread(void *ptr)
 			pexit("av_read_frame failed");
 
 		/* discard invalid buffers and non-video packages */
-		if (pkt->buf == NULL || pkt->stream_index != stream_index)
+		if (pkt->buf == NULL || pkt->stream_index != stream_index) {
 			av_packet_free(&pkt);
 			continue;
-
+		}
 		enqueue(reader_ctx->packet_queue, pkt);
 	}
 	/* finally enqueue NULL to enter draining mode */
