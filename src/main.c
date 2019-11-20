@@ -30,11 +30,10 @@
 /**
  * Container passed to reader_thread through SDL_CreateThread
  */
-typedef struct file_reader_context {
+typedef struct reader_context {
 	char *filename;
 	Queue *packet_queue;
-} file_reader_context;
-
+} reader_context;
 
 /**
  * Read a video file and put the contained AVPackets in a queue.
@@ -54,7 +53,7 @@ typedef struct file_reader_context {
  */
 int reader_thread(void *ptr)
 {
-	file_reader_context *reader_ctx = (file_reader_context *) ptr;
+	reader_context *reader_ctx = (reader_context *) ptr;
 	int ret, stream_index;	/* index of the desired stream to select packages*/
 	AVFormatContext *format_ctx;
 	AVPacket *pkt;
@@ -105,7 +104,7 @@ void display_usage(char *progname)
 int main(int argc, char **argv)
 {
 	char **video_files;
-	file_reader_context reader_ctx;
+	reader_context reader_ctx;
 	SDL_Thread *reader;
 
 	if (argc != 2) {
