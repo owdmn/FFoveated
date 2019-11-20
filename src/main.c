@@ -106,7 +106,7 @@ int main(int argc, char **argv)
 {
 	char **video_files;
 	file_reader_context reader_ctx;
-	SDL_Thread *reader_thread;
+	SDL_Thread *reader;
 
 	if (argc != 2) {
 		display_usage(argv[0]);
@@ -119,8 +119,8 @@ int main(int argc, char **argv)
 
 		reader_ctx.filename = video_files[0];
 		reader_ctx.packet_queue = create_queue(32);
-		reader_thread = SDL_CreateThread(file_reader, "file_reader_thread", &reader_ctx);
-		SDL_WaitThread(reader_thread, NULL);
+		reader = SDL_CreateThread(reader_thread, "reader_thread", &reader_ctx);
+		SDL_WaitThread(reader, NULL);
 		break; //DEMO
 	}
 
