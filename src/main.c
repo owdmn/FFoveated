@@ -28,7 +28,7 @@
 #include "helpers.h"
 
 /**
- * Container passed to file_reader through SDL_CreateThread
+ * Container passed to reader_thread through SDL_CreateThread
  */
 typedef struct file_reader_context {
 	char *filename;
@@ -52,12 +52,12 @@ typedef struct file_reader_context {
  * @param void *ptr will be cast to (file_reader_context *)
  * @return int
  */
-int file_reader(void *ptr)
+int reader_thread(void *ptr)
 {
 	file_reader_context *reader_ctx = (file_reader_context *) ptr;
 	int ret, stream_index;	/* index of the desired stream to select packages*/
 	AVFormatContext *format_ctx;
-	AVPacket pkt, *pkt_p;
+	AVPacket *pkt;
 
 	format_ctx = avformat_alloc_context();
 	if (!format_ctx)
@@ -74,21 +74,22 @@ int file_reader(void *ptr)
 	format_ctx->streams[stream_index]->discard = AVDISCARD_DEFAULT;
 
 	while (1) {
-		ret = av_read_frame(format_ctx, &pkt);
+		pkt = malloc(sizeof(AVPacket));
+		if (!pkt)
+			pexit("malloc failed");
+
+		ret = av_read_frame(format_ctx, pkt);
 		if (ret == AVERROR_EOF)
 			break;
 		else if (ret < 0)
 			pexit("av_read_frame failed");
 
-		/* discard non-video packages */
-		if (pkt.stream_index != stream_index)
+		/* discard invalid buffers and non-video packages */
+		if (pkt->buf == NULL || pkt->stream_index != stream_index)
+			av_packet_free(&pkt);
 			continue;
 
-		if (pkt.buf) {
-			pkt_p = malloc(sizeof(AVPacket));
-			av_copy_packet(pkt_p, &pkt); //FIXME: deprecated in FFmpeg
-			enqueue(reader_ctx->packet_queue, pkt_p);
-		}
+		enqueue(reader_ctx->packet_queue, pkt);
 	}
 	/* finally enqueue NULL to enter draining mode */
 	enqueue(reader_ctx->packet_queue, NULL);
