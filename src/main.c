@@ -30,6 +30,7 @@
 // Passed to reader_thread through SDL_CreateThread
 typedef struct reader_context {
 	char *filename;
+	int stream_index;
 	Queue *packet_queue;
 	AVFormatContext *format_ctx;
 } reader_context;
@@ -37,8 +38,6 @@ typedef struct reader_context {
 /**
  * Read a video file and put the contained AVPackets in a queue.
  *
- * Open and demultiplex the file given in reader_ctx->filename.
- * Identify the "best" video stream index, usually there will only be one.
  * Call av_read_frame repeatedly. Filter the returned packets by their stream
  * index, discarding everything but video packets, such as audio or subtitles.
  * Enqueue video packets in reader_ctx->packet_queue.
@@ -53,18 +52,9 @@ typedef struct reader_context {
 int reader_thread(void *ptr)
 {
 	reader_context *r_ctx = (reader_context *) ptr;
-	int ret, stream_index;	/* index of the desired stream to select packages*/
+	int ret;
+
 	AVPacket *pkt;
-
-	ret = avformat_open_input(&r_ctx->format_ctx, r_ctx->filename, NULL, NULL);
-	if (ret < 0)
-		pexit("avformat_open_input failed");
-
-	stream_index = av_find_best_stream(r_ctx->format_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
-	if (stream_index == AVERROR_STREAM_NOT_FOUND || stream_index == AVERROR_DECODER_NOT_FOUND)
-		pexit("video stream or decoder not found");
-
-	r_ctx->format_ctx->streams[stream_index]->discard = AVDISCARD_DEFAULT;
 
 	while (1) {
 		pkt = malloc(sizeof(AVPacket));
@@ -78,7 +68,7 @@ int reader_thread(void *ptr)
 			pexit("av_read_frame failed");
 
 		/* discard invalid buffers and non-video packages */
-		if (pkt->buf == NULL || pkt->stream_index != stream_index) {
+		if (pkt->buf == NULL || pkt->stream_index != r_ctx->stream_index) {
 			av_packet_free(&pkt);
 			continue;
 		}
@@ -97,26 +87,48 @@ void display_usage(char *progname)
 
 
 /**
- * Create and initialize a reader_context struct.
+ * Create and initialize a reader context.
+ *
+ * Open and demultiplex the file given in reader_ctx->filename.
+ * Identify the "best" video stream index, usually there will only be one.
  *
  * Calls pexit in case of a failure.
  * @param filename the file the reader thread will try to open
  * @return reader_context* to a heap-allocated instance.
  */
-reader_context *create_reader_context(char *filename)
+reader_context *reader_init(char *filename, int queue_capacity)
 {
 	reader_context *r;
-	size_t queue_capacity = 64;
+	int ret;
+	int stream_index;
+	AVFormatContext *format_ctx;
+	Queue *packet_queue;
 
+	// preparations: allocate, open and set required datastructures
+	format_ctx = avformat_alloc_context();
+	if (!format_ctx)
+		pexit("avformat_alloc_context failed");
+
+	ret = avformat_open_input(&format_ctx, filename, NULL, NULL);
+	if (ret < 0)
+		pexit("avformat_open_input failed");
+
+	stream_index = av_find_best_stream(format_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+	if (stream_index == AVERROR_STREAM_NOT_FOUND || stream_index == AVERROR_DECODER_NOT_FOUND)
+		pexit("video stream or decoder not found");
+
+	format_ctx->streams[stream_index]->discard = AVDISCARD_DEFAULT;
+	packet_queue = create_queue(queue_capacity);
+
+	// allocate and set the context
 	r = malloc(sizeof(reader_context));
 	if (!r)
 		pexit("malloc failed");
 
+	r->format_ctx = format_ctx;
+	r->stream_index = stream_index;
 	r->filename = filename;
-	r->packet_queue = create_queue(queue_capacity);
-	r->format_ctx = avformat_alloc_context();
-	if (!r->format_ctx)
-		pexit("avformat_alloc_context failed");
+	r->packet_queue = packet_queue;
 
 	return r;
 }
@@ -127,8 +139,9 @@ reader_context *create_reader_context(char *filename)
 int main(int argc, char **argv)
 {
 	char **video_files;
-	reader_context *r_ctx;;
+	reader_context *r_ctx;
 	SDL_Thread *reader;
+	int queue_capacity = 32;
 
 	if (argc != 2) {
 		display_usage(argv[0]);
@@ -139,9 +152,8 @@ int main(int argc, char **argv)
 
 	for (int i = 0; video_files[i]; i++) {
 
-		r_ctx = create_reader_context(video_files[0]);
+		r_ctx = reader_init(video_files[0], queue_capacity);
 		reader = SDL_CreateThread(reader_thread, "reader_thread", &r_ctx);
-
 
 
 		SDL_WaitThread(reader, NULL);
