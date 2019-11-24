@@ -73,10 +73,8 @@ void enqueue(Queue *q, void *data)
 
 	//check if full
 	if (new_rear == q->front) {
-		fprintf(stderr, "queue is full, waiting\n");
 		if (SDL_CondWait(q->full, q->mutex))
 			pexit(SDL_GetError());
-		fprintf(stderr, "got full signal!\n");
 	}
 
 	q->data[q->rear] = data;
@@ -100,10 +98,8 @@ void *dequeue(Queue *q)
 
 	//check if empty
 	if (q->front == q->rear) {
-		fprintf(stderr, "queue is empty, waiting\n");
 		if (SDL_CondWait(q->empty, q->mutex))
 			pexit(SDL_GetError());
-		fprintf(stderr, "got empty signal");
 	}
 
 	data = q->data[q->front];
