@@ -319,8 +319,5 @@ int main(int argc, char **argv)
 		break; //DEMO
 	}
 
-	if (SDL_Init(SDL_INIT_VIDEO))
-		pexit("SDL_Init failed");
-
 	return EXIT_SUCCESS;
 }
