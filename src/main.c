@@ -35,6 +35,16 @@ typedef struct reader_context {
 	AVFormatContext *format_ctx;
 } reader_context;
 
+
+// Passed to decoder_thread through SDL_CreateThread
+typedef struct decoder_context {
+	int stream_index;
+	Queue *packet_queue;
+	Queue *frame_queue;
+	AVFormatContext *format_ctx;
+} decoder_context;
+
+
 /**
  * Read a video file and put the contained AVPackets in a queue.
  *
