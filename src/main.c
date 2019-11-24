@@ -90,6 +90,122 @@ int reader_thread(void *ptr)
 	return 0;
 }
 
+
+/**
+ * Allocate an AVCodecContext and open a suitable decoder.
+ *
+ * Usually called through decoder_thread.
+ * Calls pexit in case of a failure.
+ * @param format_ctx AVFormatContext to open the decoder on.
+ * @param stream_index The element of interest in format_ctx->streams
+ */
+AVCodecContext *open_decoder(AVFormatContext *format_ctx, int stream_index)
+{
+	int ret;
+	AVCodecContext *codec_ctx;
+	AVCodec *codec;
+	AVStream *video_stream = format_ctx->streams[stream_index];
+
+	codec_ctx = avcodec_alloc_context3(NULL);
+	if (!codec_ctx)
+		pexit("avcodec_alloc_context3 failed");
+
+	ret = avcodec_parameters_to_context(codec_ctx, video_stream->codecpar);
+	if (ret < 0)
+		pexit("avcodec_parameters_to_context failed");
+
+	codec_ctx->time_base = video_stream->time_base;
+	codec = avcodec_find_decoder(codec_ctx->codec_id);
+	if (!codec)
+		pexit("avcodec_find_decoder failed");
+
+	codec_ctx->codec_id = codec->id;
+
+	ret = avcodec_open2(codec_ctx, codec, NULL);
+	if (ret < 0)
+		pexit("avcodec_open2 failed");
+
+	return codec_ctx;
+}
+
+
+/**
+ * Send a packet to the decoder, check the return value for errors.
+ *
+ * Calls pexit in case of a failure
+ * @param avctx
+ * @param packet
+ */
+void supply_packet(AVCodecContext *avctx, AVPacket *packet)
+{
+	int ret;
+
+	ret = avcodec_send_packet(avctx, packet);
+	if (ret == AVERROR(EAGAIN))
+		pexit("API break: decoder send and receive returns EAGAIN");
+	else if (ret == AVERROR_EOF)
+		pexit("Decoder has already been flushed");
+	else if (ret == AVERROR(EINVAL))
+		pexit("codec invalid, not open or requires flushing");
+	else if (ret == AVERROR(ENOMEM))
+		pexit("memory allocation failed");
+}
+
+/**
+ * Decode AVPackets and put the uncompressed AVFrames in a queue.
+ *
+ * Open a suitable decoder on dec_ctx->format_ctx with the respective stream_index.
+ * Call avcodec_receive_frame in a loop,
+ *
+ * Calls pexit in case of a failure
+ * @param *ptr will be cast to (decoder_context *)
+ * return int 0 on success.
+ */
+int decoder_thread(void *ptr)
+{
+	int ret;
+	decoder_context *dec_ctx = (decoder_context *) ptr;
+	AVCodecContext *avctx;
+	AVFrame *frame;
+	AVPacket *packet;
+
+	avctx = open_decoder(dec_ctx->format_ctx, dec_ctx->stream_index);
+
+	frame = av_frame_alloc();
+	if (!frame)
+		pexit("av_frame_alloc failed");
+
+	for (;;) {
+		ret = avcodec_receive_frame(avctx, frame);
+		if (ret == 0) {
+			// valid frame - enqueue and allocate new buffer
+			enqueue(dec_ctx->frame_queue, frame);
+			frame = av_frame_alloc();
+			if (!frame)
+				pexit("av_frame_alloc failed");
+			continue;
+		} else if (ret == AVERROR(EAGAIN)) {
+			//provide another packet to the decoder
+			packet = dequeue(dec_ctx->packet_queue);
+			supply_packet(avctx, packet);
+			continue;
+		} else if (ret == AVERROR_EOF) {
+			break;
+		} else if (ret == AVERROR(EINVAL)) {
+			//fatal
+			pexit("avcodec_receive_frame failed");
+		}
+	//note continue/break pattern before adding functionality here
+	}
+
+	//enqueue flush packet in
+	enqueue(dec_ctx->frame_queue, NULL);
+	avcodec_close(avctx);
+	avcodec_free_context(&avctx);
+	return 0;
+}
+
+
 void display_usage(char *progname)
 {
 	printf("usage:\n$ %s infile\n", progname);
@@ -144,6 +260,32 @@ reader_context *reader_init(char *filename, int queue_capacity)
 }
 
 
+/**
+ * Create and initialize a decoder context.
+ *
+ * A decoder context inherits the necessary fields from a reader context to fetch
+ * AVPacktes from its packet_queue and adds a frame_queue to emit decoded AVFrames.
+ *
+ * Calls pexit in case of a failure.
+ * @param r reader context to copy format_ctx, packet_queue and stream_index from.
+ * @param queue_capacity output frame queue capacity.
+ * @return decoder context with frame_
+ */
+decoder_context *decoder_init(reader_context *r_ctx, int queue_capacity)
+{
+	decoder_context *d;
+
+	d = malloc(sizeof(decoder_context));
+	if (!d)
+		pexit("malloc failed");
+
+	d->format_ctx = r_ctx->format_ctx;
+	d->packet_queue = r_ctx->packet_queue;
+	d->stream_index = r_ctx->stream_index;
+	d->frame_queue = create_queue(queue_capacity);
+
+	return d;
+}
 
 
 int main(int argc, char **argv)
