@@ -292,8 +292,9 @@ int main(int argc, char **argv)
 {
 	char **video_files;
 	reader_context *r_ctx;
-	SDL_Thread *reader;
-	int queue_capacity = 32;
+	decoder_context *d_ctx;
+	SDL_Thread *reader, *decoder;
+	const int queue_capacity = 32;
 
 	if (argc != 2) {
 		display_usage(argv[0]);
@@ -307,11 +308,14 @@ int main(int argc, char **argv)
 
 	for (int i = 0; video_files[i]; i++) {
 
-		r_ctx = reader_init(video_files[0], queue_capacity);
-		reader = SDL_CreateThread(reader_thread, "reader_thread", &r_ctx);
+		r_ctx = reader_init(video_files[i], queue_capacity);
+		d_ctx = decoder_init(r_ctx, queue_capacity);
 
+		reader = SDL_CreateThread(reader_thread, "reader_thread", r_ctx);
+		decoder = SDL_CreateThread(decoder_thread, "decoder_thread", d_ctx);
 
 		SDL_WaitThread(reader, NULL);
+		SDL_WaitThread(decoder, NULL);
 		break; //DEMO
 	}
 
