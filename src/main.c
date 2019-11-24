@@ -300,6 +300,9 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
+	signal(SIGTERM, exit);
+	signal(SIGINT, exit);
+
 	video_files = parse_file_lines(argv[1]);
 
 	for (int i = 0; video_files[i]; i++) {
