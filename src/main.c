@@ -299,6 +299,48 @@ decoder_context *decoder_init(reader_context *r_ctx, int queue_capacity)
 
 
 /**
+ * (Re)allocate a the texture member of a window_context
+ *
+ * If no existing texture is present, create a suitably sized one.
+ * If the existing texture and the new frame to be rendered agree in dimensions,
+ * leave the texture unmodified and return. If they disagree, destroy the old
+ * texture and create a suitable one instead.
+ * Calls pexit in case of a failure
+ * @param w_ctx window context whose texture member is being updated.
+ * @param frame frame to be rendered to the texture.
+ */
+
+void realloc_texture(window_context *w_ctx, AVFrame *frame)
+{
+	int ret;
+	int old_width;
+	int old_height;
+	int old_access;
+	Uint32 old_format;
+
+	if (w_ctx->texture) {
+		/* texture already exists - check if we need to modify it */
+		ret = SDL_QueryTexture(w_ctx->texture, &old_format, &old_access,
+											   &old_width, &old_height);
+		if (ret < 0)
+			pexit("SDL_QueryTexture failed");
+
+		/* if the specs agree, don't change it, otherwise detroy it */
+		if (frame->width == old_width && frame->height == old_height)
+			return;
+		SDL_DestroyTexture(w_ctx->texture);
+	}
+
+	w_ctx->texture = SDL_CreateTexture(SDL_GetRenderer(w_ctx->window),
+										   SDL_PIXELFORMAT_YV12,
+										   SDL_TEXTUREACCESS_TARGET,
+										   frame->width, frame->height);
+	if (!w_ctx->texture)
+		pexit("SDL_CreateTexture failed");
+}
+
+
+/**
  * Create and initialize a window_context.
  *
  * Initialize SDL, create a window, create a renderer for the window.
