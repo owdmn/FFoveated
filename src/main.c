@@ -240,6 +240,7 @@ reader_context *reader_init(char *filename, int queue_capacity)
 	int stream_index;
 	AVFormatContext *format_ctx;
 	Queue *packet_queue;
+	char *fn_cpy;
 
 	// preparations: allocate, open and set required datastructures
 	format_ctx = avformat_alloc_context();
@@ -262,9 +263,14 @@ reader_context *reader_init(char *filename, int queue_capacity)
 	if (!r)
 		pexit("malloc failed");
 
+	fn_cpy = malloc(strlen(filename));
+	if (!fn_cpy)
+		pexit("malloc failed");
+	strncpy(fn_cpy, filename, strlen(filename));
+
 	r->format_ctx = format_ctx;
 	r->stream_index = stream_index;
-	r->filename = filename;
+	r->filename = fn_cpy;
 	r->packet_queue = packet_queue;
 
 	return r;
