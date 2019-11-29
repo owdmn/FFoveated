@@ -467,6 +467,50 @@ int frame_refresh(window_context *w_ctx)
 }
 
 
+/**
+ * Loop: Render frames and react to events.
+ *
+ * Calls pexit in case of a failure.
+ * @param w_ctx window_context to which rendering and event handling applies.
+ */
+void event_loop(window_context *w_ctx)
+{
+	SDL_Event event;
+	int queue_drained = 0;
+
+	for (;;) {
+		/* check for events to handle, meanwhile just render frames */
+		while (!SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {
+			if (frame_refresh(w_ctx)) {
+				queue_drained = 1;
+				break;
+			}
+			SDL_PumpEvents();
+		}
+		if (queue_drained)
+			break;
+
+		switch (event.type) {
+		case SDL_KEYDOWN:
+			switch (event.key.keysym.sym) {
+			case SDLK_q:
+				pexit("q pressed");
+			}
+			break;
+		case SDL_WINDOWEVENT:
+			switch (event.window.event) {
+			case SDL_WINDOWEVENT_RESIZED:
+				w_ctx->width = event.window.data1;
+				w_ctx->height = event.window.data2;
+				SDL_DestroyTexture(w_ctx->texture);
+				w_ctx->texture = NULL;
+			break;
+			}
+		}
+	}
+}
+
+
 int main(int argc, char **argv)
 {
 	char **video_files;
