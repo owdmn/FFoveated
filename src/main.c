@@ -278,20 +278,30 @@ reader_context *reader_init(char *filename, int queue_capacity)
 
 
 /**
- * Free all members and the context itself, setting the pointer to NULL.
+ * Free all members and the context pointers themselves, setting the pointers
+ * to NULL. As reader and decoder contexts share pointers, this unified
+ * function is used to prevent double-frees.
  *
  * @param reader_context to be freed.
  */
-void reader_free(reader_context **r_ctx)
+void context_free(reader_context **r_ctx, decoder_context **d_ctx)
 {
 	reader_context *r;
+	decoder_context *d;
 
 	r = *r_ctx;
+	d = *d_ctx;
 	avformat_free_context(r->format_ctx);
 	free_queue(r->packet_queue);
 	free(r->filename);
-	free(*r_ctx);
+
+	// the only member left to free for d is the frame_queue!
+	free_queue(d->frame_queue);
+
+	free(d);
+	free(r);
 	*r_ctx = NULL;
+	*d_ctx = NULL;
 }
 
 
@@ -569,8 +579,7 @@ int main(int argc, char **argv)
 		SDL_WaitThread(reader, NULL);
 		SDL_WaitThread(decoder, NULL);
 
-		reader_free(&r_ctx);
-		//FIXME: Memory leak, free d_ctx properly.
+		context_free(&r_ctx, &d_ctx);
 	}
 
 	return EXIT_SUCCESS;
