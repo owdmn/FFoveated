@@ -269,7 +269,7 @@ reader_context *reader_init(char *filename, int queue_capacity)
  * Calls pexit in case of a failure.
  * @param r reader context to copy format_ctx, packet_queue and stream_index from.
  * @param queue_capacity output frame queue capacity.
- * @return decoder context with frame_
+ * @return decoder_context* with all members initialized.
  */
 decoder_context *decoder_init(reader_context *r_ctx, int queue_capacity)
 {
