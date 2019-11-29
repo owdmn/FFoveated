@@ -161,6 +161,7 @@ void supply_packet(AVCodecContext *avctx, AVPacket *packet)
 		pexit("memory allocation failed");
 }
 
+
 /**
  * Decode AVPackets and put the uncompressed AVFrames in a queue.
  *
