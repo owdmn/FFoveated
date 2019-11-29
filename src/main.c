@@ -278,6 +278,24 @@ reader_context *reader_init(char *filename, int queue_capacity)
 
 
 /**
+ * Free all members and the context itself, setting the pointer to NULL.
+ *
+ * @param reader_context to be freed.
+ */
+void reader_free(reader_context **r_ctx)
+{
+	reader_context *r;
+
+	r = *r_ctx;
+	avformat_free_context(r->format_ctx);
+	free_queue(r->packet_queue);
+	free(r->filename);
+	free(*r_ctx);
+	*r_ctx = NULL;
+}
+
+
+/**
  * Create and initialize a decoder context.
  *
  * A decoder context inherits the necessary fields from a reader context to fetch
@@ -550,7 +568,9 @@ int main(int argc, char **argv)
 
 		SDL_WaitThread(reader, NULL);
 		SDL_WaitThread(decoder, NULL);
-		//FIXME: Memory leak, free r_ctx and d_ctx properly.
+
+		reader_free(&r_ctx);
+		//FIXME: Memory leak, free d_ctx properly.
 	}
 
 	return EXIT_SUCCESS;
