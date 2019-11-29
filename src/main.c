@@ -45,6 +45,16 @@ typedef struct decoder_context {
 } decoder_context;
 
 
+// Passed to window_thread through SDL_CreateThread
+typedef struct window_context {
+	Queue *frame_queue;
+	SDL_Window *window;
+	SDL_Texture *texture;
+	int width;
+	int height;
+} window_context;
+
+
 /**
  * Read a video file and put the contained AVPackets in a queue.
  *
