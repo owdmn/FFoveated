@@ -516,6 +516,7 @@ int main(int argc, char **argv)
 	char **video_files;
 	reader_context *r_ctx;
 	decoder_context *d_ctx;
+	window_context *w_ctx;
 	SDL_Thread *reader, *decoder;
 	const int queue_capacity = 32;
 
@@ -528,6 +529,7 @@ int main(int argc, char **argv)
 	signal(SIGINT, exit);
 
 	video_files = parse_file_lines(argv[1]);
+	w_ctx = window_init(1024, 768, 0);
 
 	for (int i = 0; video_files[i]; i++) {
 
@@ -537,9 +539,12 @@ int main(int argc, char **argv)
 		reader = SDL_CreateThread(reader_thread, "reader_thread", r_ctx);
 		decoder = SDL_CreateThread(decoder_thread, "decoder_thread", d_ctx);
 
+		window_set_frame_queue(d_ctx->frame_queue, w_ctx);
+		event_loop(w_ctx);
+
 		SDL_WaitThread(reader, NULL);
 		SDL_WaitThread(decoder, NULL);
-		break; //DEMO
+		//FIXME: Memory leak, free r_ctx and d_ctx properly.
 	}
 
 	return EXIT_SUCCESS;
