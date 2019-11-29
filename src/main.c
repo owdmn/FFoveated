@@ -421,6 +421,40 @@ void center_rect(SDL_Rect *rect, window_context *w_ctx, AVFrame *f)
 }
 
 
+/**
+ * Display the next frame in the queue to the window.
+ *
+ * Dequeue the next frame from w_ctx->frame_queue, render it to w_ctx->window
+ * in a centered rectangle, adding black bars for undefined regions.
+ *
+ * @param w_ctx supplying the window and frame_queue
+ * @return 0 on success, 1 if the frame_queue is drained (returned NULL).
+ */
+int frame_refresh(window_context *w_ctx)
+{
+	AVFrame *frame;
+	SDL_Renderer *r = SDL_GetRenderer(w_ctx->window);
+	SDL_Rect rect;
+
+	SDL_SetRenderDrawColor(r, 0, 0, 0, 255);
+	SDL_RenderClear(r);
+
+	frame = dequeue(w_ctx->frame_queue);
+	if (!frame)
+		return 1;
+
+	realloc_texture(w_ctx, frame);
+	SDL_UpdateYUVTexture(w_ctx->texture, NULL, frame->data[0], frame->linesize[0],
+									frame->data[1], frame->linesize[1],
+									frame->data[2], frame->linesize[2]);
+
+	center_rect(&rect, w_ctx, frame);
+	SDL_RenderCopy(r, w_ctx->texture, NULL, &rect);
+	SDL_RenderPresent(r);
+	return 0;
+}
+
+
 int main(int argc, char **argv)
 {
 	char **video_files;
