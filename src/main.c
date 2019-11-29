@@ -298,6 +298,52 @@ decoder_context *decoder_init(reader_context *r_ctx, int queue_capacity)
 }
 
 
+/**
+ * Create and initialize a window_context.
+ *
+ * Initialize SDL, create a window, create a renderer for the window.
+ * The texture member is initialized to NULL and has to be handled with respect
+ * to an AVFrame through the realloc_texture function!
+ *
+ * Calls pexit in case of a failure.
+ * @param width initial window width.
+ * @param height initial window height.
+ * @param fullscreen add SDL_WINDOW_FULLSCREEN flag if evaluated to true.
+ * @return window_context with initialized defaults
+ */
+window_context *window_init(int width, int height, int fullscreen)
+{
+	window_context *w_ctx;
+	SDL_Window *window;
+	Uint32 flags;
+	SDL_Renderer *renderer;
+
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
+	flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
+	if (fullscreen)
+		flags |= SDL_WINDOW_FULLSCREEN;
+	window = SDL_CreateWindow("FFoveated",
+		SDL_WINDOWPOS_CENTERED,
+		SDL_WINDOWPOS_CENTERED,
+		width, height, flags);
+	if (!window)
+		pexit("SDL_CreateWindow failed");
+
+	renderer = SDL_CreateRenderer(window, -1, 0);
+	if (!renderer)
+		pexit(SDL_GetError());
+
+	w_ctx = malloc(sizeof(window_context));
+	if (!w_ctx)
+		pexit("malloc failed");
+	w_ctx->window = window;
+	w_ctx->width = width;
+	w_ctx->height = height;
+	w_ctx->texture = NULL;
+	return w_ctx;
+}
+
+
 int main(int argc, char **argv)
 {
 	char **video_files;
