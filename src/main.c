@@ -388,6 +388,18 @@ window_context *window_init(int width, int height, int fullscreen)
 
 
 /**
+ * Set the frame queue for the given window context to q
+ *
+ * @param q frame queue
+ * @param w_ctx to be updated
+ */
+void window_set_frame_queue(Queue *q, window_context *w_ctx)
+{
+	w_ctx->frame_queue = q;
+}
+
+
+/**
  * Calculate a centered rectangle within a window with a suitable aspect ratio.
  *
  * In order to display a frame in a window with unsuitable aspect ratio,
