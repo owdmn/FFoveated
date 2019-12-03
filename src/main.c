@@ -135,8 +135,8 @@ void supply_packet(AVCodecContext *avctx, AVPacket *packet)
 /**
  * Decode AVPackets and put the uncompressed AVFrames in a queue.
  *
- * Open a suitable decoder on dec_ctx->format_ctx with the respective stream_index.
- * Call avcodec_receive_frame in a loop,
+ * Call avcodec_receive_frame in a loop, enqueue decoded frames.
+ * Adds NULL packet to queue in the end.
  *
  * Calls pexit in case of a failure
  * @param *ptr will be cast to (decoder_context *)
@@ -146,24 +146,20 @@ int decoder_thread(void *ptr)
 {
 	int ret;
 	decoder_context *dec_ctx = (decoder_context *) ptr;
-	AVCodecContext *avctx;
+	AVCodecContext *avctx = dec_ctx->avctx;
 	AVFrame *frame;
 	AVPacket *packet;
 
-	avctx = open_decoder(dec_ctx->format_ctx, dec_ctx->stream_index);
-
 	frame = av_frame_alloc();
-	if (!frame)
-		pexit("av_frame_alloc failed");
-
 	for (;;) {
+		if (!frame)
+			pexit("av_frame_alloc failed");
+
 		ret = avcodec_receive_frame(avctx, frame);
 		if (ret == 0) {
 			// valid frame - enqueue and allocate new buffer
 			enqueue(dec_ctx->frame_queue, frame);
 			frame = av_frame_alloc();
-			if (!frame)
-				pexit("av_frame_alloc failed");
 			continue;
 		} else if (ret == AVERROR(EAGAIN)) {
 			//provide another packet to the decoder
