@@ -365,6 +365,58 @@ decoder_context *fov_decoder_init(encoder_context *enc_ctx)
 
 
 /**
+ * Create and initialize an encoder context
+ *
+ * Calls pexit in case of a failure
+ * @param dec_ctx context of the previous decoder
+ * @param queue_capacity output packet queue capacity
+ * @return encoder_context with initialized fields and opened decoder
+ */
+encoder_context *encoder_init(decoder_context *dec_ctx, int queue_capacity)
+{
+	int ret;
+	encoder_context *enc_ctx;
+	AVCodecContext *avctx;
+	AVCodec *codec;
+	AVDictionary *options = NULL;
+
+	enc_ctx = malloc(sizeof(encoder_context));
+	if (!enc_ctx)
+		pexit("malloc failed");
+
+	codec = avcodec_find_encoder_by_name("libx264");
+	if (!codec)
+		pexit("encoder not found");
+
+	avctx = avcodec_alloc_context3(codec);
+	if (!avctx)
+		pexit("avcodec_alloc_context3 failed");
+
+	avctx->time_base = dec_ctx->avctx->time_base;
+	avctx->pix_fmt = codec->pix_fmts[0]; //first supported pixel format
+	avctx->width = dec_ctx->avctx->width;
+	avctx->height = dec_ctx->avctx->height;
+
+	ret = 0;
+	ret |= av_dict_set(&options, "preset", "ultrafast", 0);
+	ret |= av_dict_set(&options, "tune", "zerolatency", 0);
+	ret |= av_dict_set(&options, "aq-mode", "variance", 0);
+	ret |= av_dict_set(&options, "gop-size", "3", 0);
+
+	ret = avcodec_open2(avctx, avctx->codec, &options);
+	if (ret < 0)
+		pexit("avcodec_open2 failed");
+
+	enc_ctx->frame_queue = dec_ctx->frame_queue;
+	enc_ctx->packet_queue = create_queue(queue_capacity);
+	enc_ctx->avctx = avctx;
+	enc_ctx->options = options;
+
+	return enc_ctx;
+}
+
+
+/**
  * (Re)allocate a the texture member of a window_context
  *
  * If no existing texture is present, create a suitably sized one.
