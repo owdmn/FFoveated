@@ -38,11 +38,19 @@ typedef struct reader_context {
 
 // Passed to decoder_thread through SDL_CreateThread
 typedef struct decoder_context {
-	int stream_index;
 	Queue *packet_queue;
 	Queue *frame_queue;
-	AVFormatContext *format_ctx;
+	AVCodecContext *avctx;
 } decoder_context;
+
+
+// Passed  to encoder_thread through SDL_CreateThread
+typedef struct encoder_context {
+	Queue *frame_queue;
+	Queue *packet_queue;
+	AVCodecContext *avctx;
+	AVDictionary *options;
+} encoder_context;
 
 
 // Passed to window_thread through SDL_CreateThread
