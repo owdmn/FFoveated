@@ -102,44 +102,6 @@ int reader_thread(void *ptr)
 
 
 /**
- * Allocate an AVCodecContext and open a suitable decoder.
- *
- * Usually called through decoder_thread.
- * Calls pexit in case of a failure.
- * @param format_ctx AVFormatContext to open the decoder on.
- * @param stream_index The element of interest in format_ctx->streams
- */
-AVCodecContext *open_decoder(AVFormatContext *format_ctx, int stream_index)
-{
-	int ret;
-	AVCodecContext *codec_ctx;
-	AVCodec *codec;
-	AVStream *video_stream = format_ctx->streams[stream_index];
-
-	codec_ctx = avcodec_alloc_context3(NULL);
-	if (!codec_ctx)
-		pexit("avcodec_alloc_context3 failed");
-
-	ret = avcodec_parameters_to_context(codec_ctx, video_stream->codecpar);
-	if (ret < 0)
-		pexit("avcodec_parameters_to_context failed");
-
-	codec_ctx->time_base = video_stream->time_base;
-	codec = avcodec_find_decoder(codec_ctx->codec_id);
-	if (!codec)
-		pexit("avcodec_find_decoder failed");
-
-	codec_ctx->codec_id = codec->id;
-
-	ret = avcodec_open2(codec_ctx, codec, NULL);
-	if (ret < 0)
-		pexit("avcodec_open2 failed");
-
-	return codec_ctx;
-}
-
-
-/**
  * Send a packet to the decoder, check the return value for errors.
  *
  * Calls pexit in case of a failure
