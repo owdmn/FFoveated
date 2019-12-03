@@ -140,7 +140,7 @@ void supply_packet(AVCodecContext *avctx, AVPacket *packet)
  *
  * Calls pexit in case of a failure
  * @param *ptr will be cast to (decoder_context *)
- * return int 0 on success.
+ * @return int 0 on success.
  */
 int decoder_thread(void *ptr)
 {
