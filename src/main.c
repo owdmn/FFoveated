@@ -701,9 +701,10 @@ int main(int argc, char **argv)
 {
 	char **video_files;
 	reader_context *r_ctx;
-	decoder_context *d_ctx;
+	decoder_context *source_d_ctx, *fov_d_ctx;
+	encoder_context *e_ctx;
 	window_context *w_ctx;
-	SDL_Thread *reader, *decoder;
+	SDL_Thread *reader, *source_decoder, *encoder, *fov_decoder;
 	const int queue_capacity = 32;
 
 	if (argc != 2) {
@@ -720,18 +721,26 @@ int main(int argc, char **argv)
 	for (int i = 0; video_files[i]; i++) {
 
 		r_ctx = reader_init(video_files[i], queue_capacity);
-		d_ctx = decoder_init(r_ctx, queue_capacity);
+		source_d_ctx = source_decoder_init(r_ctx, queue_capacity);
+		e_ctx = encoder_init(source_d_ctx, 1);
+		fov_d_ctx = fov_decoder_init(e_ctx);
 
 		reader = SDL_CreateThread(reader_thread, "reader_thread", r_ctx);
-		decoder = SDL_CreateThread(decoder_thread, "decoder_thread", d_ctx);
+		source_decoder = SDL_CreateThread(decoder_thread, "source_decoder_thread", source_d_ctx);
+		encoder = SDL_CreateThread(encoder_thread, "encoder_thread", e_ctx);
+		fov_decoder = SDL_CreateThread(decoder_thread, "fov_decoder_thread", fov_d_ctx);
 
-		window_set_frame_queue(d_ctx->frame_queue, w_ctx);
+		window_set_frame_queue(fov_d_ctx->frame_queue, w_ctx);
 		event_loop(w_ctx);
 
 		SDL_WaitThread(reader, NULL);
-		SDL_WaitThread(decoder, NULL);
+		SDL_WaitThread(source_decoder, NULL);
+		SDL_WaitThread(encoder, NULL);
+		SDL_WaitThread(fov_decoder, NULL);
 
-		context_free(&r_ctx, &d_ctx);
+		// FIXME: fix free functions
+		//context_free(&r_ctx, &d_ctx);
+		break;
 	}
 
 	return EXIT_SUCCESS;
