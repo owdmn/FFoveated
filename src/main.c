@@ -25,6 +25,7 @@
 #include <string.h>
 #include <SDL2/SDL.h>
 #include <libavformat/avformat.h>
+#include <libavutil/time.h>
 #include "helpers.h"
 
 // Passed to reader_thread through SDL_CreateThread
@@ -60,6 +61,8 @@ typedef struct window_context {
 	SDL_Texture *texture;
 	int width;
 	int height;
+	int64_t time_start;
+	AVRational time_base;
 } window_context;
 
 
@@ -664,6 +667,9 @@ void event_loop(window_context *w_ctx)
 	SDL_Event event;
 	int queue_drained = 0;
 
+	if (w_ctx->time_start != -1)
+		pexit("please call set_timing previous to event_loop!");
+
 	for (;;) {
 		/* check for events to handle, meanwhile just render frames */
 		while (!SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {
@@ -694,6 +700,20 @@ void event_loop(window_context *w_ctx)
 			}
 		}
 	}
+}
+
+
+/**
+ * Set the time_base for the presentation window context.
+ * Sets time_start to -1, which is required before entering event_loop.
+ *
+ * @param w_ctx the window context to be updated
+ * @param d_ctx the cont ext of the original decoder
+ */
+void set_timing(window_context *w_ctx, decoder_context *d_ctx)
+{
+	w_ctx->time_base = d_ctx->avctx->time_base;
+	w_ctx->time_start = -1;
 }
 
 
@@ -731,6 +751,7 @@ int main(int argc, char **argv)
 		fov_decoder = SDL_CreateThread(decoder_thread, "fov_decoder_thread", fov_d_ctx);
 
 		window_set_frame_queue(fov_d_ctx->frame_queue, w_ctx);
+		set_timing(w_ctx, source_d_ctx);
 		event_loop(w_ctx);
 
 		SDL_WaitThread(reader, NULL);
