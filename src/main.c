@@ -441,6 +441,51 @@ void supply_frame(AVCodecContext *avctx, AVFrame *frame)
 
 
 /**
+ * Encode AVFrames and put the compressed AVPacktes in a queue
+ *
+ * Call avcodec_receive_packet in a loop, enqueue encoded packets
+ * Adds NULL packet to queue in the end.
+ *
+ * Calls pexit in case of a failure
+ * @param ptr will be casted to (encoder_context *)
+ * @return int 0 on success
+ */
+int encoder_thread(void *ptr)
+{
+	encoder_context *enc_ctx = (encoder_context *) ptr;
+	AVFrame *frame;
+	AVPacket *packet;
+	int ret;
+
+	packet = av_packet_alloc(); //NULL check in loop.
+
+	for (;;) {
+		if (!packet)
+			pexit("av_packet_alloc failed");
+
+		ret = avcodec_receive_packet(enc_ctx->avctx, packet);
+		if (ret == 0) {
+			enqueue(enc_ctx->packet_queue, packet);
+			packet = av_packet_alloc();
+			continue;
+		} else if (ret == AVERROR(EAGAIN)) {
+			frame = dequeue(enc_ctx->frame_queue);
+			supply_frame(enc_ctx->avctx, frame);
+		} else if (ret == AVERROR_EOF) {
+			break;
+		} else if (ret == AVERROR(EINVAL)) {
+			pexit("avcodec_receive_packet failed");
+		}
+	}
+
+	enqueue(enc_ctx->packet_queue, NULL);
+	avcodec_close(enc_ctx->avctx);
+	avcodec_free_context(&enc_ctx->avctx);
+	return 0;
+}
+
+
+/**
  * (Re)allocate a the texture member of a window_context
  *
  * If no existing texture is present, create a suitably sized one.
