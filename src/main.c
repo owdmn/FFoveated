@@ -636,6 +636,8 @@ int frame_refresh(window_context *w_ctx)
 	AVFrame *frame;
 	SDL_Renderer *r = SDL_GetRenderer(w_ctx->window);
 	SDL_Rect rect;
+	int64_t upts; // presentation time in micro seconds
+	int64_t uremaining; //remaining time in micro seconds
 
 	SDL_SetRenderDrawColor(r, 0, 0, 0, 255);
 	SDL_RenderClear(r);
@@ -651,6 +653,20 @@ int frame_refresh(window_context *w_ctx)
 
 	center_rect(&rect, w_ctx, frame);
 	SDL_RenderCopy(r, w_ctx->texture, NULL, &rect);
+
+	//add an initial delay to avoid lags when upts == 0
+	if (w_ctx->time_start == -1)
+		w_ctx->time_start = av_gettime_relative() + 1000;
+
+	//XXX: why is the factor 2 here necessary? Can't find this in the docs, but it works consistently...
+	upts = (2 * 1000000 * frame->pts * w_ctx->time_base.num) / w_ctx->time_base.den;
+	uremaining = w_ctx->time_start + upts - av_gettime_relative();
+
+	if (uremaining > 0)
+		av_usleep(uremaining);
+	else
+		pexit("presentation lag");
+
 	SDL_RenderPresent(r);
 	return 0;
 }
