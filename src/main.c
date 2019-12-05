@@ -45,15 +45,6 @@ typedef struct decoder_context {
 } decoder_context;
 
 
-// Passed  to encoder_thread through SDL_CreateThread
-typedef struct encoder_context {
-	Queue *frame_queue;
-	Queue *packet_queue;
-	AVCodecContext *avctx;
-	AVDictionary *options;
-} encoder_context;
-
-
 // Passed to window_thread through SDL_CreateThread
 typedef struct window_context {
 	Queue *frame_queue;
@@ -64,6 +55,17 @@ typedef struct window_context {
 	int64_t time_start;
 	AVRational time_base;
 } window_context;
+
+
+// Passed  to encoder_thread through SDL_CreateThread
+typedef struct encoder_context {
+	Queue *frame_queue;
+	Queue *packet_queue;
+	Queue *lag_queue; //timestamps to measure encoding-decoding-display lag
+	AVCodecContext *avctx;
+	AVDictionary *options;
+	window_context *w_ctx; //required for foveation...
+} encoder_context;
 
 
 /**
