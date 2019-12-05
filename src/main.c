@@ -26,7 +26,13 @@
 #include <SDL2/SDL.h>
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>
+#include <libavutil/frame.h>
 #include "helpers.h"
+
+#ifdef __MINGW32__
+#include "iViewXAPI.h"
+#endif
+
 
 // Passed to reader_thread through SDL_CreateThread
 typedef struct reader_context {
@@ -53,6 +59,10 @@ typedef struct window_context {
 	SDL_Texture *texture;
 	int width;
 	int height;
+	int mouse_x;
+	int mouse_y;
+	float disp_width;
+	float disp_height;
 	int64_t time_start;
 	AVRational time_base;
 } window_context;
@@ -463,7 +473,11 @@ int encoder_thread(void *ptr)
 	encoder_context *enc_ctx = (encoder_context *) ptr;
 	AVFrame *frame;
 	AVPacket *packet;
+	AVFrameSideData *sd;
+	float *descr;
+	size_t descr_size = 4*sizeof(float);
 	int ret;
+	int64_t *timestamp;
 
 	packet = av_packet_alloc(); //NULL check in loop.
 
@@ -478,7 +492,22 @@ int encoder_thread(void *ptr)
 			continue;
 		} else if (ret == AVERROR(EAGAIN)) {
 			frame = dequeue(enc_ctx->frame_queue);
+
+			sd = av_frame_new_side_data(frame, AV_FRAME_DATA_FOVEATION_DESCRIPTOR, descr_size);
+			if (!sd)
+				pexit("side data allocation failed");
+			descr = foveation_descriptor(enc_ctx->w_ctx);
+			sd->data = (uint8_t *) descr;
+
 			supply_frame(enc_ctx->avctx, frame);
+
+			timestamp = malloc(sizeof(int64_t));
+			if (!timestamp)
+				perror("malloc failed");
+			*timestamp = av_gettime_relative();
+
+			enqueue(enc_ctx->lag_queue, timestamp);
+
 		} else if (ret == AVERROR_EOF) {
 			break;
 		} else if (ret == AVERROR(EINVAL)) {
