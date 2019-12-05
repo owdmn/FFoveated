@@ -48,6 +48,7 @@ typedef struct decoder_context {
 // Passed to window_thread through SDL_CreateThread
 typedef struct window_context {
 	Queue *frame_queue;
+	Queue *lag_queue;
 	SDL_Window *window;
 	SDL_Texture *texture;
 	int width;
@@ -377,7 +378,7 @@ decoder_context *fov_decoder_init(encoder_context *enc_ctx)
  * @param queue_capacity output packet queue capacity
  * @return encoder_context with initialized fields and opened decoder
  */
-encoder_context *encoder_init(decoder_context *dec_ctx, int queue_capacity)
+encoder_context *encoder_init(decoder_context *dec_ctx, int queue_capacity, window_context *w_ctx)
 {
 	int ret;
 	encoder_context *enc_ctx;
@@ -414,8 +415,10 @@ encoder_context *encoder_init(decoder_context *dec_ctx, int queue_capacity)
 
 	enc_ctx->frame_queue = dec_ctx->frame_queue;
 	enc_ctx->packet_queue = create_queue(queue_capacity);
+	enc_ctx->lag_queue = create_queue(queue_capacity);
 	enc_ctx->avctx = avctx;
 	enc_ctx->options = options;
+	enc_ctx->w_ctx = w_ctx;
 
 	return enc_ctx;
 }
@@ -584,9 +587,10 @@ window_context *window_init(int width, int height, int fullscreen)
  * @param q frame queue
  * @param w_ctx to be updated
  */
-void window_set_frame_queue(Queue *q, window_context *w_ctx)
+void window_set_queues(window_context *w_ctx, Queue *frames, Queue *lags)
 {
-	w_ctx->frame_queue = q;
+	w_ctx->frame_queue = frames;
+	w_ctx->lag_queue = lags;
 }
 
 
@@ -648,6 +652,8 @@ int frame_refresh(window_context *w_ctx)
 	SDL_Rect rect;
 	int64_t upts; // presentation time in micro seconds
 	int64_t uremaining; //remaining time in micro seconds
+	int64_t *encoder_timestamp;
+	double delay;
 
 	SDL_SetRenderDrawColor(r, 0, 0, 0, 255);
 	SDL_RenderClear(r);
@@ -668,9 +674,20 @@ int frame_refresh(window_context *w_ctx)
 	if (w_ctx->time_start == -1)
 		w_ctx->time_start = av_gettime_relative() + 1000;
 
+
+	encoder_timestamp = dequeue(w_ctx->lag_queue);
+	delay = (av_gettime_relative() - *encoder_timestamp) / 1000000;
+
+	free(encoder_timestamp);
+
 	//XXX: why is the factor 2 here necessary? Can't find this in the docs, but it works consistently...
 	upts = (2 * 1000000 * frame->pts * w_ctx->time_base.num) / w_ctx->time_base.den;
 	uremaining = w_ctx->time_start + upts - av_gettime_relative();
+
+	#ifdef debug
+	fprintf(stdout, "remaining: %ld upts: %ld, frame->pts %ld, num %d, den %d, time %ld, delay %lf\n",
+	uremaining, upts, frame->pts, w_ctx->time_base.num, w_ctx->time_base.den, av_gettime_relative(), delay);
+	#endif
 
 	if (uremaining > 0)
 		av_usleep(uremaining);
@@ -678,6 +695,7 @@ int frame_refresh(window_context *w_ctx)
 		pexit("presentation lag");
 
 	SDL_RenderPresent(r);
+
 	return 0;
 }
 
@@ -768,7 +786,7 @@ int main(int argc, char **argv)
 
 		r_ctx = reader_init(video_files[i], queue_capacity);
 		source_d_ctx = source_decoder_init(r_ctx, queue_capacity);
-		e_ctx = encoder_init(source_d_ctx, 1);
+		e_ctx = encoder_init(source_d_ctx, 1, w_ctx);
 		fov_d_ctx = fov_decoder_init(e_ctx);
 
 		reader = SDL_CreateThread(reader_thread, "reader_thread", r_ctx);
@@ -776,7 +794,7 @@ int main(int argc, char **argv)
 		encoder = SDL_CreateThread(encoder_thread, "encoder_thread", e_ctx);
 		fov_decoder = SDL_CreateThread(decoder_thread, "fov_decoder_thread", fov_d_ctx);
 
-		window_set_frame_queue(fov_d_ctx->frame_queue, w_ctx);
+		window_set_queues(w_ctx, fov_d_ctx->frame_queue, e_ctx->lag_queue);
 		set_timing(w_ctx, source_d_ctx);
 		event_loop(w_ctx);
 
