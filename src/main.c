@@ -579,28 +579,32 @@ void realloc_texture(window_context *w_ctx, AVFrame *frame)
  * to an AVFrame through the realloc_texture function!
  *
  * Calls pexit in case of a failure.
- * @param width initial window width.
- * @param height initial window height.
- * @param fullscreen add SDL_WINDOW_FULLSCREEN flag if evaluated to true.
+ * @param disp_width physical display width in cm
+ * @param dissp_height physical display height in cm
  * @return window_context with initialized defaults
  */
-window_context *window_init(int width, int height, int fullscreen)
+window_context *window_init(float disp_width, float disp_height)
 {
 	window_context *w_ctx;
 	SDL_Window *window;
 	Uint32 flags;
 	SDL_Renderer *renderer;
+	SDL_DisplayMode dm;
+	int disp_index;
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
-	flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE;
-	if (fullscreen)
-		flags |= SDL_WINDOW_FULLSCREEN;
+
+
+	flags = SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP;
 	window = SDL_CreateWindow("FFoveated",
 		SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED,
-		width, height, flags);
+		1, 1, flags);
 	if (!window)
 		pexit("SDL_CreateWindow failed");
+
+	disp_index = SDL_GetWindowDisplayIndex(window);
+	SDL_GetDesktopDisplayMode(disp_index, &dm);
 
 	renderer = SDL_CreateRenderer(window, -1, 0);
 	if (!renderer)
@@ -610,9 +614,11 @@ window_context *window_init(int width, int height, int fullscreen)
 	if (!w_ctx)
 		pexit("malloc failed");
 	w_ctx->window = window;
-	w_ctx->width = width;
-	w_ctx->height = height;
+	w_ctx->width = dm.w;
+	w_ctx->height = dm.h;
 	w_ctx->texture = NULL;
+	w_ctx->disp_width = disp_width;
+	w_ctx->disp_height = disp_height;
 	return w_ctx;
 }
 
