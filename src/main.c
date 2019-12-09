@@ -31,6 +31,13 @@
 
 #ifdef __MINGW32__
 #include "iViewXAPI.h"
+typedef struct gaze_struct {
+	int x;
+	int y;
+	SDL_mutex *mutex;
+} gaze_struct;
+
+gaze_struct *gaze = NULL;
 #endif
 
 
