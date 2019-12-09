@@ -37,7 +37,7 @@ typedef struct gaze_struct {
 	SDL_mutex *mutex;
 } gaze_struct;
 
-gaze_struct *gaze = NULL;
+gaze_struct *gaze;
 #endif
 
 
