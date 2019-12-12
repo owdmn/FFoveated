@@ -695,7 +695,9 @@ int frame_refresh(window_context *w_ctx)
 	int64_t upts; // presentation time in micro seconds
 	int64_t uremaining; //remaining time in micro seconds
 	int64_t *encoder_timestamp;
+	#ifdef debug
 	double delay;
+	#endif
 
 	SDL_SetRenderDrawColor(r, 0, 0, 0, 255);
 	SDL_RenderClear(r);
@@ -716,17 +718,14 @@ int frame_refresh(window_context *w_ctx)
 	if (w_ctx->time_start == -1)
 		w_ctx->time_start = av_gettime_relative() + 1000;
 
-
-	encoder_timestamp = dequeue(w_ctx->lag_queue);
-	delay = (av_gettime_relative() - *encoder_timestamp) / 1000000;
-
-	free(encoder_timestamp);
-
 	//XXX: why is the factor 2 here necessary? Can't find this in the docs, but it works consistently...
 	upts = (2 * 1000000 * frame->pts * w_ctx->time_base.num) / w_ctx->time_base.den;
 	uremaining = w_ctx->time_start + upts - av_gettime_relative();
 
+	encoder_timestamp = dequeue(w_ctx->lag_queue);
+	free(encoder_timestamp);
 	#ifdef debug
+	delay = (av_gettime_relative() - *encoder_timestamp) / 1000000;
 	fprintf(stdout, "remaining: %ld upts: %ld, frame->pts %ld, num %d, den %d, time %ld, delay %lf\n",
 	uremaining, upts, frame->pts, w_ctx->time_base.num, w_ctx->time_base.den, av_gettime_relative(), delay);
 	#endif
