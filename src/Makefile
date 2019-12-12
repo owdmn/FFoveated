@@ -3,18 +3,18 @@ FFMPEG = /path/to/FFmpeg/**
 CHECKPATCH = /path/to/checkpatch.pl
 ####
 
-CPFLAGS = --no-tree --no-signoff -f --ignore NEW_TYPEDEFS,AVOID_EXTERNS,SPDX_LICENSE_TAG
+CPFLAGS = --no-tree --no-signoff -f --ignore NEW_TYPEDEFS,AVOID_EXTERNS,SPDX_LICENSE_TAG,CONST_STRUCT
 CC = gcc
 CFLAGS= -I$(FFMPEG) -Wall -Wextra -Wpedantic
 LDFLAGS= -L$(FFMPEG) -lavutil -lavcodec -lavdevice -lavformat -lSDL2
 
 .PHONY: clean checkpatch
 
-all: main
+all: debug
 
 debug: CFLAGS += -g -pg
 debug: LDFLAGS += -pg
-debug: all
+debug: main
 
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
