@@ -805,6 +805,7 @@ void set_timing(window_context *w_ctx, decoder_context *d_ctx)
 int main(int argc, char **argv)
 {
 	char **video_files;
+	float disp_width, disp_height; //physical display dimensions in cm
 	reader_context *r_ctx;
 	decoder_context *source_d_ctx, *fov_d_ctx;
 	encoder_context *e_ctx;
@@ -817,11 +818,19 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
+	// FIXME: Hardcoded 15.6" 16:9 FHD notebook display dimensions
+	disp_width = 34.5;
+	disp_height = 19.4;
+
 	signal(SIGTERM, exit);
 	signal(SIGINT, exit);
 
+#ifdef __MINGW32__
+	setup_ivx();
+#endif
+
 	video_files = parse_file_lines(argv[1]);
-	w_ctx = window_init(1024, 768, 0);
+	w_ctx = window_init(disp_width, disp_height);
 
 	for (int i = 0; video_files[i]; i++) {
 
