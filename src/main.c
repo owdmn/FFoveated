@@ -783,7 +783,12 @@ void event_loop(window_context *w_ctx)
 				w_ctx->texture = NULL;
 			break;
 			}
+			break;
+		case SDL_MOUSEMOTION:
+			SDL_GetMouseState(&w_ctx->mouse_x, &w_ctx->mouse_y);
+			break;
 		}
+
 	}
 }
 
