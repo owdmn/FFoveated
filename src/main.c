@@ -753,7 +753,7 @@ void event_loop(window_context *w_ctx)
 	int queue_drained = 0;
 
 	if (w_ctx->time_start != -1)
-		pexit("please call set_timing previous to event_loop!");
+		pexit("Error: call set_timing first");
 
 	for (;;) {
 		/* check for events to handle, meanwhile just render frames */
