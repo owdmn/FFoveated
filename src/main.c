@@ -477,6 +477,41 @@ void supply_frame(AVCodecContext *avctx, AVFrame *frame)
 
 
 /**
+ * Allocate a foveation descriptor to pass to an encoder
+ *
+ * @param w_ctx window context
+ * @return float* 4-tuple: x and y coordinate, standarddeviation and offset
+ */
+float *foveation_descriptor(window_context *w_ctx)
+{
+	float *f;
+	int width, height;
+
+	SDL_GetWindowSize(w_ctx->window, &width, &height);
+
+	f = malloc(4*sizeof(float));
+	if (!f)
+		pexit("malloc failed");
+
+	#ifdef __MINGW32__
+	// eye-tracking
+	f[0] =
+	f[1] =
+	f[2] =
+	f[3] =
+
+	#else
+	// fake mouse motion dummy values
+	f[0] = (float) w_ctx->mouse_x / width;
+	f[1] = (float) w_ctx->mouse_y / height;
+	f[2] = 0.3;
+	f[3] = 20;
+	#endif
+	return f;
+}
+
+
+/**
  * Encode AVFrames and put the compressed AVPacktes in a queue
  *
  * Call avcodec_receive_packet in a loop, enqueue encoded packets
