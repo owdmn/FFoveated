@@ -41,10 +41,11 @@ typedef struct gaze_struct {
 } gaze_struct;
 
 typedef struct tracker_position {
-	int pos_x;
-	int pos_y;
-	int pos_z;
-	double inclination;
+	double screen_width;
+	double screen_height;
+	double tracker_depth;
+	double tracker_height;
+	double tracker_angle; //20° with the SMI bracket
 } tracker_position;
 
 gaze_struct *gaze;
@@ -79,8 +80,8 @@ typedef struct window_context {
 	int height;
 	int mouse_x;
 	int mouse_y;
-	float disp_width;
-	float disp_height;
+	float screen_width;
+	float screen_height;
 	int64_t time_start;
 	AVRational time_base;
 } window_context;
@@ -625,11 +626,11 @@ void realloc_texture(window_context *w_ctx, AVFrame *frame)
  * to an AVFrame through the realloc_texture function!
  *
  * Calls pexit in case of a failure.
- * @param disp_width physical display width in cm
- * @param dissp_height physical display height in cm
+ * @param screen_width physical screen width in mm
+ * @param screen_height physical screen height in mm
  * @return window_context with initialized defaults
  */
-window_context *window_init(float disp_width, float disp_height)
+window_context *window_init(float screen_width, float screen_height)
 {
 	window_context *w_ctx;
 	SDL_Window *window;
@@ -663,8 +664,8 @@ window_context *window_init(float disp_width, float disp_height)
 	w_ctx->width = dm.w;
 	w_ctx->height = dm.h;
 	w_ctx->texture = NULL;
-	w_ctx->disp_width = disp_width;
-	w_ctx->disp_height = disp_height;
+	w_ctx->screen_width = screen_width;
+	w_ctx->screen_height = screen_height;
 	return w_ctx;
 }
 
@@ -936,7 +937,7 @@ void setup_ivx(void)
 int main(int argc, char **argv)
 {
 	char **video_files;
-	float disp_width, disp_height; //physical display dimensions in cm
+	float screen_width, screen_height; //physical display dimensions in mm
 	reader_context *r_ctx;
 	decoder_context *source_d_ctx, *fov_d_ctx;
 	encoder_context *e_ctx;
@@ -950,8 +951,8 @@ int main(int argc, char **argv)
 	}
 
 	// FIXME: Hardcoded 15.6" 16:9 FHD notebook display dimensions
-	disp_width = 34.5;
-	disp_height = 19.4;
+	screen_width = 345;
+	screen_height = 194;
 
 	signal(SIGTERM, exit);
 	signal(SIGINT, exit);
@@ -961,7 +962,7 @@ int main(int argc, char **argv)
 #endif
 
 	video_files = parse_file_lines(argv[1]);
-	w_ctx = window_init(disp_width, disp_height);
+	w_ctx = window_init(screen_width, screen_height);
 
 	for (int i = 0; video_files[i]; i++) {
 
