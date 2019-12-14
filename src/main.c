@@ -28,6 +28,7 @@
 #include <libavutil/time.h>
 #include <libavutil/frame.h>
 #include "helpers.h"
+#include "decoding.h"
 
 #ifdef __MINGW32__
 #include "iViewXAPI.h"
@@ -51,23 +52,6 @@ typedef struct tracker_position {
 gaze_struct *gaze;
 tracker_struct *tracker;
 #endif
-
-
-// Passed to reader_thread through SDL_CreateThread
-typedef struct reader_context {
-	char *filename;
-	int stream_index;
-	Queue *packet_queue;
-	AVFormatContext *format_ctx;
-} reader_context;
-
-
-// Passed to decoder_thread through SDL_CreateThread
-typedef struct decoder_context {
-	Queue *packet_queue;
-	Queue *frame_queue;
-	AVCodecContext *avctx;
-} decoder_context;
 
 
 // Passed to window_thread through SDL_CreateThread
@@ -96,52 +80,6 @@ typedef struct encoder_context {
 	AVDictionary *options;
 	window_context *w_ctx; //required for foveation...
 } encoder_context;
-
-
-/**
- * Read a video file and put the contained AVPackets in a queue.
- *
- * Call av_read_frame repeatedly. Filter the returned packets by their stream
- * index, discarding everything but video packets, such as audio or subtitles.
- * Enqueue video packets in reader_ctx->packet_queue.
- * Upon EOF, enqueue a NULL pointer.
- *
- * This function is to be used through SDL_CreateThread.
- * The resulting thread will block if reader_ctx->queue is full.
- * Calls pexit in case of a failure.
- * @param void *ptr will be cast to (file_reader_context *)
- * @return int
- */
-int reader_thread(void *ptr)
-{
-	reader_context *r_ctx = (reader_context *) ptr;
-	int ret;
-
-	AVPacket *pkt;
-
-	while (1) {
-		pkt = malloc(sizeof(AVPacket));
-		if (!pkt)
-			pexit("malloc failed");
-
-		ret = av_read_frame(r_ctx->format_ctx, pkt);
-		if (ret == AVERROR_EOF)
-			break;
-		else if (ret < 0)
-			pexit("av_read_frame failed");
-
-		/* discard invalid buffers and non-video packages */
-		if (pkt->buf == NULL || pkt->stream_index != r_ctx->stream_index) {
-			av_packet_free(&pkt);
-			continue;
-		}
-		enqueue(r_ctx->packet_queue, pkt);
-	}
-	/* finally enqueue NULL to enter draining mode */
-	enqueue(r_ctx->packet_queue, NULL);
-	avformat_close_input(&r_ctx->format_ctx); //FIXME: Is it reasonable to call this here already?
-	return 0;
-}
 
 
 /**
@@ -303,58 +241,6 @@ void context_free(reader_context **r_ctx, decoder_context **d_ctx)
 	free(r);
 	*r_ctx = NULL;
 	*d_ctx = NULL;
-}
-
-
-/**
- * Create and initialize a decoder context.
- *
- * A decoder context inherits the necessary fields from a reader context to fetch
- * AVPacktes from its packet_queue and adds a frame_queue to emit decoded AVFrames.
- *
- * Calls pexit in case of a failure.
- * @param r reader context to copy format_ctx, packet_queue and stream_index from.
- * @param queue_capacity output frame queue capacity.
- * @return decoder_context* with all members initialized.
- */
-decoder_context *source_decoder_init(reader_context *r_ctx, int queue_capacity)
-{
-	AVCodecContext *avctx;
-	decoder_context *d;
-	int ret;
-	int index = r_ctx->stream_index;
-	AVStream *stream = r_ctx->format_ctx->streams[index];
-	AVCodec *codec;
-
-	avctx = avcodec_alloc_context3(NULL);
-	if (!avctx)
-		pexit("avcodec_alloc_context3 failed");
-
-	ret = avcodec_parameters_to_context(avctx, stream->codecpar);
-	if (ret < 0)
-		pexit("avcodec_parameters_to_context failed");
-
-	avctx->time_base = stream->time_base;
-
-	codec = avcodec_find_decoder(avctx->codec_id);
-	if (!codec)
-		pexit("avcodec_find_decoder failed");
-
-	avctx->codec_id = codec->id;
-
-	ret = avcodec_open2(avctx, codec, NULL);
-	if (ret < 0)
-		pexit("avcodec_open2 failed");
-
-	d = malloc(sizeof(decoder_context));
-	if (!d)
-		pexit("malloc failed");
-
-	d->packet_queue = r_ctx->packet_queue;
-	d->frame_queue = create_queue(queue_capacity);
-	d->avctx = avctx;
-
-	return d;
 }
 
 

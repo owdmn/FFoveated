@@ -21,6 +21,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <SDL2/SDL.h>
+#include <libavformat/avformat.h>
+
+
+
 
 /**
  * Print formatted error message referencing the affeted source file,
@@ -112,3 +116,27 @@ void *dequeue(Queue *q);
  * @return NULL-terminated array of char* to line contents
  */
 char **parse_file_lines(const char *pathname);
+
+// Passed to reader_thread through SDL_CreateThread
+typedef struct reader_context {
+	char *filename;
+	int stream_index;
+	Queue *packet_queue;
+	AVFormatContext *format_ctx;
+} reader_context;
+
+/**
+ * Read a video file and put the contained AVPackets in a queue.
+ *
+ * Call av_read_frame repeatedly. Filter the returned packets by their stream
+ * index, discarding everything but video packets, such as audio or subtitles.
+ * Enqueue video packets in reader_ctx->packet_queue.
+ * Upon EOF, enqueue a NULL pointer.
+ *
+ * This function is to be used through SDL_CreateThread.
+ * The resulting thread will block if reader_ctx->queue is full.
+ * Calls pexit in case of a failure.
+ * @param void *ptr will be cast to (file_reader_context *)
+ * @return int
+ */
+int reader_thread(void *ptr);

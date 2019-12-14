@@ -152,3 +152,35 @@ char **parse_file_lines(const char *pathname)
 
 	return lines;
 }
+
+
+int reader_thread(void *ptr)
+{
+	reader_context *r_ctx = (reader_context *) ptr;
+	int ret;
+
+	AVPacket *pkt;
+
+	while (1) {
+		pkt = malloc(sizeof(AVPacket));
+		if (!pkt)
+			pexit("malloc failed");
+
+		ret = av_read_frame(r_ctx->format_ctx, pkt);
+		if (ret == AVERROR_EOF)
+			break;
+		else if (ret < 0)
+			pexit("av_read_frame failed");
+
+		/* discard invalid buffers and non-video packages */
+		if (pkt->buf == NULL || pkt->stream_index != r_ctx->stream_index) {
+			av_packet_free(&pkt);
+			continue;
+		}
+		enqueue(r_ctx->packet_queue, pkt);
+	}
+	/* finally enqueue NULL to enter draining mode */
+	enqueue(r_ctx->packet_queue, NULL);
+	avformat_close_input(&r_ctx->format_ctx); //FIXME: Is it reasonable to call this here already?
+	return 0;
+}
