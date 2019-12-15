@@ -23,9 +23,6 @@
 #include <SDL2/SDL.h>
 #include <libavformat/avformat.h>
 
-
-
-
 /**
  * Print formatted error message referencing the affeted source file,
  * line and the errno status through perror (3), then exit with EXIT_FAILURE.
@@ -140,3 +137,19 @@ typedef struct reader_context {
  * @return int
  */
 int reader_thread(void *ptr);
+
+// Passed to window_thread through SDL_CreateThread
+typedef struct window_context {
+	Queue *frame_queue;
+	Queue *lag_queue;
+	SDL_Window *window;
+	SDL_Texture *texture;
+	int width;
+	int height;
+	int mouse_x;
+	int mouse_y;
+	float screen_width;
+	float screen_height;
+	int64_t time_start;
+	AVRational time_base;
+} window_context;

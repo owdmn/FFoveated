@@ -29,6 +29,7 @@
 #include <libavutil/frame.h>
 #include "helpers.h"
 #include "decoding.h"
+#include "encoding.h"
 
 #ifdef __MINGW32__
 #include "iViewXAPI.h"
@@ -52,34 +53,6 @@ typedef struct tracker_position {
 gaze_struct *gaze;
 tracker_struct *tracker;
 #endif
-
-
-// Passed to window_thread through SDL_CreateThread
-typedef struct window_context {
-	Queue *frame_queue;
-	Queue *lag_queue;
-	SDL_Window *window;
-	SDL_Texture *texture;
-	int width;
-	int height;
-	int mouse_x;
-	int mouse_y;
-	float screen_width;
-	float screen_height;
-	int64_t time_start;
-	AVRational time_base;
-} window_context;
-
-
-// Passed  to encoder_thread through SDL_CreateThread
-typedef struct encoder_context {
-	Queue *frame_queue;
-	Queue *packet_queue;
-	Queue *lag_queue; //timestamps to measure encoding-decoding-display lag
-	AVCodecContext *avctx;
-	AVDictionary *options;
-	window_context *w_ctx; //required for foveation...
-} encoder_context;
 
 
 /**
