@@ -16,7 +16,7 @@
  */
 
 #include <libavformat/avformat.h>
-#include "helpers.h"
+#include "io.h"
 
 // Passed  to encoder_thread through SDL_CreateThread
 typedef struct encoder_context {

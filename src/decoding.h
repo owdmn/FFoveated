@@ -19,7 +19,7 @@
 #pragma once
 
 #include <libavformat/avformat.h>
-#include "helpers.h"
+#include "io.h"
 
 // Passed to decoder_thread through SDL_CreateThread
 typedef struct decoder_context {
