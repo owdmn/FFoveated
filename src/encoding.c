@@ -110,6 +110,9 @@ int encoder_thread(void *ptr)
 		} else if (ret == AVERROR(EAGAIN)) {
 			frame = dequeue(enc_ctx->frame_queue);
 
+			if (!frame)
+				break;
+
 			sd = av_frame_new_side_data(frame, AV_FRAME_DATA_FOVEATION_DESCRIPTOR, descr_size);
 			if (!sd)
 				pexit("side data allocation failed");
