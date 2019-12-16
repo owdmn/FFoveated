@@ -156,6 +156,14 @@ typedef struct window_context {
 } window_context;
 
 /**
+ * Set the frame queue for the given window context to q
+ *
+ * @param q frame queue
+ * @param w_ctx to be updated
+ */
+void window_set_queues(window_context *w_ctx, Queue *frames, Queue *lags);
+
+/**
  * Create and initialize a reader context.
  *
  * Open and demultiplex the file given in reader_ctx->filename.
@@ -217,3 +225,12 @@ void center_rect(SDL_Rect *rect, window_context *w_ctx, AVFrame *f);
  * @return 0 on success, 1 if the frame_queue is drained (returned NULL).
  */
 int frame_refresh(window_context *w_ctx);
+
+/**
+ * Set the time_base for the presentation window context.
+ * Sets time_start to -1, which is required before entering event_loop.
+ *
+ * @param w_ctx the window context to be updated
+ * @param d_ctx the cont ext of the original decoder
+ */
+void set_timing(window_context *w_ctx, AVRational time_base);

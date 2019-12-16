@@ -375,3 +375,15 @@ int frame_refresh(window_context *w_ctx)
 
 	return 0;
 }
+
+void window_set_queues(window_context *w_ctx, Queue *frames, Queue *lags)
+{
+	w_ctx->frame_queue = frames;
+	w_ctx->lag_queue = lags;
+}
+
+void set_timing(window_context *w_ctx, AVRational time_base)
+{
+	w_ctx->time_base = time_base;
+	w_ctx->time_start = -1;
+}

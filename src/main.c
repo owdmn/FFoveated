@@ -44,18 +44,6 @@ void display_usage(char *progname)
 }
 
 /**
- * Set the frame queue for the given window context to q
- *
- * @param q frame queue
- * @param w_ctx to be updated
- */
-void window_set_queues(window_context *w_ctx, Queue *frames, Queue *lags)
-{
-	w_ctx->frame_queue = frames;
-	w_ctx->lag_queue = lags;
-}
-
-/**
  * Loop: Render frames and react to events.
  *
  * Calls pexit in case of a failure.
@@ -149,7 +137,7 @@ int main(int argc, char **argv)
 		fov_decoder = SDL_CreateThread(decoder_thread, "fov_decoder_thread", fov_d_ctx);
 
 		window_set_queues(w_ctx, fov_d_ctx->frame_queue, e_ctx->lag_queue);
-		set_timing(w_ctx, source_d_ctx);
+		set_timing(w_ctx, source_d_ctx->avctx->time_base);
 		event_loop(w_ctx);
 
 		SDL_WaitThread(reader, NULL);
