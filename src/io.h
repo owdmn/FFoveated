@@ -161,7 +161,7 @@ typedef struct window_context {
  * @param q frame queue
  * @param w_ctx to be updated
  */
-void window_set_queues(window_context *w_ctx, Queue *frames, Queue *lags);
+void set_window_queues(window_context *w_ctx, Queue *frames, Queue *lags);
 
 /**
  * Create and initialize a reader context.
@@ -233,4 +233,4 @@ int frame_refresh(window_context *w_ctx);
  * @param w_ctx the window context to be updated
  * @param d_ctx the cont ext of the original decoder
  */
-void set_timing(window_context *w_ctx, AVRational time_base);
+void set_window_timing(window_context *w_ctx, AVRational time_base);

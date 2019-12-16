@@ -136,8 +136,8 @@ int main(int argc, char **argv)
 		encoder = SDL_CreateThread(encoder_thread, "encoder_thread", e_ctx);
 		fov_decoder = SDL_CreateThread(decoder_thread, "fov_decoder_thread", fov_d_ctx);
 
-		window_set_queues(w_ctx, fov_d_ctx->frame_queue, e_ctx->lag_queue);
-		set_timing(w_ctx, source_d_ctx->avctx->time_base);
+		set_window_queues(w_ctx, fov_d_ctx->frame_queue, e_ctx->lag_queue);
+		set_window_timing(w_ctx, source_d_ctx->avctx->time_base);
 		event_loop(w_ctx);
 
 		SDL_WaitThread(reader, NULL);
