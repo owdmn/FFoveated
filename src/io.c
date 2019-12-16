@@ -322,3 +322,56 @@ void center_rect(SDL_Rect *rect, window_context *w_ctx, AVFrame *f)
 	rect->w = width;
 	rect->h = height;
 }
+
+int frame_refresh(window_context *w_ctx)
+{
+	AVFrame *frame;
+	SDL_Renderer *r = SDL_GetRenderer(w_ctx->window);
+	SDL_Rect rect;
+	int64_t upts; // presentation time in micro seconds
+	int64_t uremaining; //remaining time in micro seconds
+	int64_t *encoder_timestamp;
+	#ifdef debug
+	double delay;
+	#endif
+
+	SDL_SetRenderDrawColor(r, 0, 0, 0, 255);
+	SDL_RenderClear(r);
+
+	frame = dequeue(w_ctx->frame_queue);
+	if (!frame)
+		return 1;
+
+	realloc_texture(w_ctx, frame);
+	SDL_UpdateYUVTexture(w_ctx->texture, NULL, frame->data[0], frame->linesize[0],
+									frame->data[1], frame->linesize[1],
+									frame->data[2], frame->linesize[2]);
+
+	center_rect(&rect, w_ctx, frame);
+	SDL_RenderCopy(r, w_ctx->texture, NULL, &rect);
+
+	//add an initial delay to avoid lags when upts == 0
+	if (w_ctx->time_start == -1)
+		w_ctx->time_start = av_gettime_relative() + 1000;
+
+	//XXX: why is the factor 2 here necessary? Can't find this in the docs, but it works consistently...
+	upts = (2 * 1000000 * frame->pts * w_ctx->time_base.num) / w_ctx->time_base.den;
+	uremaining = w_ctx->time_start + upts - av_gettime_relative();
+
+	encoder_timestamp = dequeue(w_ctx->lag_queue);
+	free(encoder_timestamp);
+	#ifdef debug
+	delay = (av_gettime_relative() - *encoder_timestamp) / 1000000;
+	fprintf(stdout, "remaining: %ld upts: %ld, frame->pts %ld, num %d, den %d, time %ld, delay %lf\n",
+	uremaining, upts, frame->pts, w_ctx->time_base.num, w_ctx->time_base.den, av_gettime_relative(), delay);
+	#endif
+
+	if (uremaining > 0)
+		av_usleep(uremaining);
+	else
+		pexit("presentation lag");
+
+	SDL_RenderPresent(r);
+
+	return 0;
+}

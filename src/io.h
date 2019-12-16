@@ -205,3 +205,14 @@ void realloc_texture(window_context *w_ctx, AVFrame *frame);
  * @param f AVFrame to be displayed
  */
 void center_rect(SDL_Rect *rect, window_context *w_ctx, AVFrame *f);
+
+/**
+ * Display the next frame in the queue to the window.
+ *
+ * Dequeue the next frame from w_ctx->frame_queue, render it to w_ctx->window
+ * in a centered rectangle, adding black bars for undefined regions.
+ *
+ * @param w_ctx supplying the window and frame_queue
+ * @return 0 on success, 1 if the frame_queue is drained (returned NULL).
+ */
+int frame_refresh(window_context *w_ctx);
