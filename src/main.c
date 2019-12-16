@@ -54,17 +54,10 @@ gaze_struct *gaze;
 tracker_struct *tracker;
 #endif
 
-
-
-
 void display_usage(char *progname)
 {
 	printf("usage:\n$ %s infile\n", progname);
 }
-
-
-
-
 
 /**
  * Free all members and the context pointers themselves, setting the pointers
@@ -92,10 +85,6 @@ void context_free(reader_context **r_ctx, decoder_context **d_ctx)
 	*r_ctx = NULL;
 	*d_ctx = NULL;
 }
-
-
-
-
 
 /**
  * Create and initialize an encoder context
@@ -150,7 +139,6 @@ encoder_context *encoder_init(decoder_context *dec_ctx, int queue_capacity, wind
 	return enc_ctx;
 }
 
-
 /**
  * Supply the given codec with a frame, handle errors appropriately.
  *
@@ -158,7 +146,6 @@ encoder_context *encoder_init(decoder_context *dec_ctx, int queue_capacity, wind
  * @param avctx context of the codec being supplied
  * @param frame the frame to be supplied
  */
-
 void supply_frame(AVCodecContext *avctx, AVFrame *frame)
 {
 	int ret;
@@ -173,7 +160,6 @@ void supply_frame(AVCodecContext *avctx, AVFrame *frame)
 	else if (ret == AVERROR(ENOMEM))
 		pexit("memory allocation failed");
 }
-
 
 /**
  * Allocate a foveation descriptor to pass to an encoder
@@ -208,7 +194,6 @@ float *foveation_descriptor(window_context *w_ctx)
 	#endif
 	return f;
 }
-
 
 /**
  * Encode AVFrames and put the compressed AVPacktes in a queue
@@ -273,7 +258,6 @@ int encoder_thread(void *ptr)
 	return 0;
 }
 
-
 /**
  * (Re)allocate a the texture member of a window_context
  *
@@ -285,7 +269,6 @@ int encoder_thread(void *ptr)
  * @param w_ctx window context whose texture member is being updated.
  * @param frame frame to be rendered to the texture.
  */
-
 void realloc_texture(window_context *w_ctx, AVFrame *frame)
 {
 	int ret;
@@ -314,7 +297,6 @@ void realloc_texture(window_context *w_ctx, AVFrame *frame)
 	if (!w_ctx->texture)
 		pexit("SDL_CreateTexture failed");
 }
-
 
 /**
  * Create and initialize a window_context.
@@ -367,7 +349,6 @@ window_context *window_init(float screen_width, float screen_height)
 	return w_ctx;
 }
 
-
 /**
  * Set the frame queue for the given window context to q
  *
@@ -379,7 +360,6 @@ void window_set_queues(window_context *w_ctx, Queue *frames, Queue *lags)
 	w_ctx->frame_queue = frames;
 	w_ctx->lag_queue = lags;
 }
-
 
 /**
  * Calculate a centered rectangle within a window with a suitable aspect ratio.
@@ -421,7 +401,6 @@ void center_rect(SDL_Rect *rect, window_context *w_ctx, AVFrame *f)
 	rect->w = width;
 	rect->h = height;
 }
-
 
 /**
  * Display the next frame in the queue to the window.
@@ -485,7 +464,6 @@ int frame_refresh(window_context *w_ctx)
 	return 0;
 }
 
-
 /**
  * Loop: Render frames and react to events.
  *
@@ -537,7 +515,6 @@ void event_loop(window_context *w_ctx)
 	}
 }
 
-
 /**
  * Set the time_base for the presentation window context.
  * Sets time_start to -1, which is required before entering event_loop.
@@ -550,7 +527,6 @@ void set_timing(window_context *w_ctx, decoder_context *d_ctx)
 	w_ctx->time_base = d_ctx->avctx->time_base;
 	w_ctx->time_start = -1;
 }
-
 
 #ifdef __MINGW32__
 int __stdcall update_gaze(struct SampleStruct sampleData)
@@ -630,7 +606,6 @@ void setup_ivx(void)
 	iV_SetSampleCallback(update_gaze);
 }
 #endif
-
 
 int main(int argc, char **argv)
 {

@@ -26,7 +26,6 @@ void pexit_(const char *msg, const char *file, const int line)
 	exit(EXIT_FAILURE);
 }
 
-
 Queue *create_queue(size_t capacity)
 {
 	Queue *q;
@@ -60,7 +59,6 @@ void free_queue(Queue *q)
 	free(q->data);
 	free(q);
 }
-
 
 void enqueue(Queue *q, void *data)
 {
@@ -113,7 +111,6 @@ void *dequeue(Queue *q)
 	return data;
 }
 
-
 char **parse_file_lines(const char *pathname)
 {
 	FILE *fp;
@@ -152,7 +149,6 @@ char **parse_file_lines(const char *pathname)
 
 	return lines;
 }
-
 
 int reader_thread(void *ptr)
 {

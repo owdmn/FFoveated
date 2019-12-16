@@ -29,4 +29,3 @@ typedef struct encoder_context {
 	AVDictionary *options;
 	window_context *w_ctx; //required for foveation...
 } encoder_context;
-

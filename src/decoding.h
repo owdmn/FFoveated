@@ -15,7 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
 #include <libavformat/avformat.h>
@@ -27,7 +26,6 @@ typedef struct decoder_context {
 	Queue *frame_queue;
 	AVCodecContext *avctx;
 } decoder_context;
-
 
 /**
  * Create and initialize a decoder context.
