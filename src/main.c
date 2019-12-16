@@ -54,55 +54,7 @@ gaze_struct *gaze;
 tracker_struct *tracker;
 #endif
 
-/**
- * Decode AVPackets and put the uncompressed AVFrames in a queue.
- *
- * Call avcodec_receive_frame in a loop, enqueue decoded frames.
- * Adds NULL packet to queue in the end.
- *
- * Calls pexit in case of a failure
- * @param *ptr will be cast to (decoder_context *)
- * @return int 0 on success.
- */
-int decoder_thread(void *ptr)
-{
-	int ret;
-	decoder_context *dec_ctx = (decoder_context *) ptr;
-	AVCodecContext *avctx = dec_ctx->avctx;
-	AVFrame *frame;
-	AVPacket *packet;
 
-	frame = av_frame_alloc();
-	for (;;) {
-		if (!frame)
-			pexit("av_frame_alloc failed");
-
-		ret = avcodec_receive_frame(avctx, frame);
-		if (ret == 0) {
-			// valid frame - enqueue and allocate new buffer
-			enqueue(dec_ctx->frame_queue, frame);
-			frame = av_frame_alloc();
-			continue;
-		} else if (ret == AVERROR(EAGAIN)) {
-			//provide another packet to the decoder
-			packet = dequeue(dec_ctx->packet_queue);
-			supply_packet(avctx, packet);
-			continue;
-		} else if (ret == AVERROR_EOF) {
-			break;
-		} else if (ret == AVERROR(EINVAL)) {
-			//fatal
-			pexit("avcodec_receive_frame failed");
-		}
-	//note continue/break pattern before adding functionality here
-	}
-
-	//enqueue flush packet in
-	enqueue(dec_ctx->frame_queue, NULL);
-	avcodec_close(avctx);
-	avcodec_free_context(&avctx);
-	return 0;
-}
 
 
 void display_usage(char *progname)

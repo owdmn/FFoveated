@@ -50,3 +50,15 @@ decoder_context *source_decoder_init(reader_context *r_ctx, int queue_capacity);
  * @param packet
  */
 void supply_packet(AVCodecContext *avctx, AVPacket *packet);
+
+/**
+ * Decode AVPackets and put the uncompressed AVFrames in a queue.
+ *
+ * Call avcodec_receive_frame in a loop, enqueue decoded frames.
+ * Adds NULL packet to queue in the end.
+ *
+ * Calls pexit in case of a failure
+ * @param *ptr will be cast to (decoder_context *)
+ * @return int 0 on success.
+ */
+int decoder_thread(void *ptr);
