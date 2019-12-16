@@ -192,3 +192,16 @@ window_context *window_init(float screen_width, float screen_height);
  * @param frame frame to be rendered to the texture.
  */
 void realloc_texture(window_context *w_ctx, AVFrame *frame);
+
+
+/**
+ * Calculate a centered rectangle within a window with a suitable aspect ratio.
+ *
+ * In order to display a frame in a window with unsuitable aspect ratio,
+ * we render the frame to a centered rectangle with correct aspect ratio.
+ * Empty areas will be filled with black bars.
+ * @param rect will be modified to fit the desired aspect ratio in the window.
+ * @param w_ctx window_context, read width and height of the window
+ * @param f AVFrame to be displayed
+ */
+void center_rect(SDL_Rect *rect, window_context *w_ctx, AVFrame *f);

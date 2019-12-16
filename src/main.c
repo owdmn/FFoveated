@@ -98,46 +98,7 @@ void window_set_queues(window_context *w_ctx, Queue *frames, Queue *lags)
 	w_ctx->lag_queue = lags;
 }
 
-/**
- * Calculate a centered rectangle within a window with a suitable aspect ratio.
- *
- * In order to display a frame in a window with unsuitable aspect ratio,
- * we render the frame to a centered rectangle with correct aspect ratio.
- * Empty areas will be filled with black bars.
- * @param rect will be modified to fit the desired aspect ratio in the window.
- * @param w_ctx window_context, read width and height of the window
- * @param f AVFrame to be displayed
- */
-void center_rect(SDL_Rect *rect, window_context *w_ctx, AVFrame *f)
-{
-	int width, height, x, y;
-	AVRational aspect_ratio = av_make_q(f->width, f->height);
 
-	// check if the frame fully fits into the window
-	if (w_ctx->height >= f->height && w_ctx->width >= f->width) {
-		x = (w_ctx->width - f->width) / 2;
-		y = (w_ctx->height - f->height) / 2;
-		width = f->width;
-		height = f->height;
-	} else { //frame does not fit completely, do a fit
-		// fix height to window, adapt width according to frame
-		height = w_ctx->height;
-		width = av_rescale(height, aspect_ratio.num, aspect_ratio.den);
-		// if that does not fit, fix width to window, adapt height
-		if (width > w_ctx->width) {
-			width = w_ctx->width;
-			height = av_rescale(width, aspect_ratio.den, aspect_ratio.num);
-		}
-		// margins for black bars if aspect ratio does not fit
-		x = (w_ctx->width - width) / 2;
-		y = (w_ctx->height - height) / 2;
-	}
-
-	rect->x = x; //left
-	rect->y = y; //top
-	rect->w = width;
-	rect->h = height;
-}
 
 /**
  * Display the next frame in the queue to the window.
