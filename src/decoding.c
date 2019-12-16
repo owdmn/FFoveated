@@ -111,3 +111,33 @@ int decoder_thread(void *ptr)
 	avcodec_free_context(&avctx);
 	return 0;
 }
+
+decoder_context *fov_decoder_init(Queue packet_queue)
+{
+	AVCodecContext *avctx;
+	AVCodec *codec;
+	decoder_context *d;
+	int ret;
+
+	codec = avcodec_find_decoder(AV_CODEC_ID_H264);
+	if (!codec)
+		pexit("avcodec_find_decoder_by_name failed");
+
+	avctx = avcodec_alloc_context3(codec);
+	if (!avctx)
+		pexit("avcodec_alloc_context3 failed");
+
+	ret = avcodec_open2(avctx, codec, NULL);
+	if (ret < 0)
+		pexit("avcodec_open2 failed");
+
+	d = malloc(sizeof(decoder_context));
+	if (!d)
+		pexit("malloc failed");
+
+	d->packet_queue = packet_queue;
+	d->frame_queue = create_queue(1);
+	d->avctx = avctx;
+
+	return d;
+}

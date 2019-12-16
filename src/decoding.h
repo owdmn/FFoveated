@@ -62,3 +62,15 @@ void supply_packet(AVCodecContext *avctx, AVPacket *packet);
  * @return int 0 on success.
  */
 int decoder_thread(void *ptr);
+
+/**
+ * Create and initialize a decoder context.
+ *
+ * The decoder context inherits the necessary fields from an encoder context.
+ *
+ * Calls pexit in case of a failure.
+ * @param r reader context to copy format_ctx, packet_queue and stream_index from.
+ * @param queue_capacity output frame queue capacity.
+ * @return decoder_context* with all members initialized.
+ */
+decoder_context *fov_decoder_init(Queue packet_queue);

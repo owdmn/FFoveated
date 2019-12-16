@@ -94,45 +94,7 @@ void context_free(reader_context **r_ctx, decoder_context **d_ctx)
 }
 
 
-/**
- * Create and initialize a decoder context.
- *
- * The decoder context inherits the necessary fields from an encoder context.
- *
- * Calls pexit in case of a failure.
- * @param r reader context to copy format_ctx, packet_queue and stream_index from.
- * @param queue_capacity output frame queue capacity.
- * @return decoder_context* with all members initialized.
- */
-decoder_context *fov_decoder_init(encoder_context *enc_ctx)
-{
-	AVCodecContext *avctx;
-	AVCodec *codec;
-	decoder_context *d;
-	int ret;
 
-	codec = avcodec_find_decoder(AV_CODEC_ID_H264);
-	if (!codec)
-		pexit("avcodec_find_decoder_by_name failed");
-
-	avctx = avcodec_alloc_context3(codec);
-	if (!avctx)
-		pexit("avcodec_alloc_context3 failed");
-
-	ret = avcodec_open2(avctx, codec, NULL);
-	if (ret < 0)
-		pexit("avcodec_open2 failed");
-
-	d = malloc(sizeof(decoder_context));
-	if (!d)
-		pexit("malloc failed");
-
-	d->packet_queue = enc_ctx->packet_queue;
-	d->frame_queue = create_queue(1);
-	d->avctx = avctx;
-
-	return d;
-}
 
 
 /**
