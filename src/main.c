@@ -59,7 +59,6 @@ void display_usage(char *progname)
 	printf("usage:\n$ %s infile\n", progname);
 }
 
-
 /**
  * Set the frame queue for the given window context to q
  *
@@ -71,10 +70,6 @@ void window_set_queues(window_context *w_ctx, Queue *frames, Queue *lags)
 	w_ctx->frame_queue = frames;
 	w_ctx->lag_queue = lags;
 }
-
-
-
-
 
 /**
  * Loop: Render frames and react to events.
