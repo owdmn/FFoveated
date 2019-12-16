@@ -17,8 +17,11 @@
 
 #pragma once
 
-#include <SDL2/SDL.h>
+#ifdef et
 #include <iViewXAPI.h>
+#endif
+
+#include <SDL2/SDL.h>
 
 typedef struct gaze_struct {
 	int screen_x;
