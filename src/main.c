@@ -144,8 +144,6 @@ int main(int argc, char **argv)
 		SDL_WaitThread(source_decoder, NULL);
 		SDL_WaitThread(encoder, NULL);
 		SDL_WaitThread(fov_decoder, NULL);
-
-		break;
 	}
 
 	return EXIT_SUCCESS;
