@@ -17,7 +17,7 @@
 
 #pragma once
 
-#ifdef et
+#ifdef ET
 #include <iViewXAPI.h>
 #endif
 

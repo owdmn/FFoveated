@@ -12,6 +12,9 @@ LDFLAGS= -L$(FFMPEG) -lavutil -lavcodec -lavdevice -lavformat -lSDL2
 
 all: debug
 
+eyetracking: CFLAGS += -D ET
+eyetracking: debug
+
 debug: CFLAGS += -g -pg
 debug: LDFLAGS += -pg
 debug: main
@@ -19,7 +22,7 @@ debug: main
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 
-main: io.o decoding.o encoding.o main.o
+main: io.o decoding.o encoding.o et.o main.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 checkpatch:

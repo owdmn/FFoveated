@@ -31,7 +31,7 @@
 #include "decoding.h"
 #include "encoding.h"
 
-#ifdef __MINGW32__
+#ifdef ET
 #include "et.h"
 #include "iViewXAPI.h"
 gaze_struct *gaze;
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
 	signal(SIGTERM, exit);
 	signal(SIGINT, exit);
 
-#ifdef __MINGW32__
+#ifdef ET
 	setup_ivx();
 #endif
 
@@ -145,8 +145,6 @@ int main(int argc, char **argv)
 		SDL_WaitThread(encoder, NULL);
 		SDL_WaitThread(fov_decoder, NULL);
 
-		// FIXME: fix free functions
-		//context_free(&r_ctx, &d_ctx);
 		break;
 	}
 

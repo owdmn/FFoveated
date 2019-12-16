@@ -17,7 +17,7 @@
 
 #include "et.h"
 
-#ifdef et
+#ifdef ET
 int __stdcall update_gaze(struct SampleStruct sampleData)
 {
 	int screen_x, screen_y;
