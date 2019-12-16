@@ -59,32 +59,6 @@ void display_usage(char *progname)
 	printf("usage:\n$ %s infile\n", progname);
 }
 
-/**
- * Free all members and the context pointers themselves, setting the pointers
- * to NULL. As reader and decoder contexts share pointers, this unified
- * function is used to prevent double-frees.
- *
- * @param reader_context to be freed.
- */
-void context_free(reader_context **r_ctx, decoder_context **d_ctx)
-{
-	reader_context *r;
-	decoder_context *d;
-
-	r = *r_ctx;
-	d = *d_ctx;
-	avformat_free_context(r->format_ctx);
-	free_queue(r->packet_queue);
-	free(r->filename);
-
-	// the only member left to free for d is the frame_queue!
-	free_queue(d->frame_queue);
-
-	free(d);
-	free(r);
-	*r_ctx = NULL;
-	*d_ctx = NULL;
-}
 
 /**
  * Set the frame queue for the given window context to q
