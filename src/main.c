@@ -63,58 +63,7 @@ void display_usage(char *progname)
 }
 
 
-/**
- * Create and initialize a reader context.
- *
- * Open and demultiplex the file given in reader_ctx->filename.
- * Identify the "best" video stream index, usually there will only be one.
- *
- * Calls pexit in case of a failure.
- * @param filename the file the reader thread will try to open
- * @return reader_context* to a heap-allocated instance.
- */
-reader_context *reader_init(char *filename, int queue_capacity)
-{
-	reader_context *r;
-	int ret;
-	int stream_index;
-	AVFormatContext *format_ctx;
-	Queue *packet_queue;
-	char *fn_cpy;
 
-	// preparations: allocate, open and set required datastructures
-	format_ctx = avformat_alloc_context();
-	if (!format_ctx)
-		pexit("avformat_alloc_context failed");
-
-	ret = avformat_open_input(&format_ctx, filename, NULL, NULL);
-	if (ret < 0)
-		pexit("avformat_open_input failed");
-
-	stream_index = av_find_best_stream(format_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
-	if (stream_index == AVERROR_STREAM_NOT_FOUND || stream_index == AVERROR_DECODER_NOT_FOUND)
-		pexit("video stream or decoder not found");
-
-	format_ctx->streams[stream_index]->discard = AVDISCARD_DEFAULT;
-	packet_queue = create_queue(queue_capacity);
-
-	// allocate and set the context
-	r = malloc(sizeof(reader_context));
-	if (!r)
-		pexit("malloc failed");
-
-	fn_cpy = malloc(strlen(filename));
-	if (!fn_cpy)
-		pexit("malloc failed");
-	strncpy(fn_cpy, filename, strlen(filename));
-
-	r->format_ctx = format_ctx;
-	r->stream_index = stream_index;
-	r->filename = fn_cpy;
-	r->packet_queue = packet_queue;
-
-	return r;
-}
 
 
 /**

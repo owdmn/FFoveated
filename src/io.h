@@ -153,3 +153,15 @@ typedef struct window_context {
 	int64_t time_start;
 	AVRational time_base;
 } window_context;
+
+/**
+ * Create and initialize a reader context.
+ *
+ * Open and demultiplex the file given in reader_ctx->filename.
+ * Identify the "best" video stream index, usually there will only be one.
+ *
+ * Calls pexit in case of a failure.
+ * @param filename the file the reader thread will try to open
+ * @return reader_context* to a heap-allocated instance.
+ */
+reader_context *reader_init(char *filename, int queue_capacity);
