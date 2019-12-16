@@ -165,3 +165,17 @@ typedef struct window_context {
  * @return reader_context* to a heap-allocated instance.
  */
 reader_context *reader_init(char *filename, int queue_capacity);
+
+/**
+ * Create and initialize a window_context.
+ *
+ * Initialize SDL, create a window, create a renderer for the window.
+ * The texture member is initialized to NULL and has to be handled with respect
+ * to an AVFrame through the realloc_texture function!
+ *
+ * Calls pexit in case of a failure.
+ * @param screen_width physical screen width in mm
+ * @param screen_height physical screen height in mm
+ * @return window_context with initialized defaults
+ */
+window_context *window_init(float screen_width, float screen_height);

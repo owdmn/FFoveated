@@ -223,3 +223,42 @@ reader_context *reader_init(char *filename, int queue_capacity)
 
 	return r;
 }
+
+window_context *window_init(float screen_width, float screen_height)
+{
+	window_context *w_ctx;
+	SDL_Window *window;
+	Uint32 flags;
+	SDL_Renderer *renderer;
+	SDL_DisplayMode dm;
+	int disp_index;
+
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
+
+
+	flags = SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP;
+	window = SDL_CreateWindow("FFoveated",
+		SDL_WINDOWPOS_CENTERED,
+		SDL_WINDOWPOS_CENTERED,
+		1, 1, flags);
+	if (!window)
+		pexit("SDL_CreateWindow failed");
+
+	disp_index = SDL_GetWindowDisplayIndex(window);
+	SDL_GetDesktopDisplayMode(disp_index, &dm);
+
+	renderer = SDL_CreateRenderer(window, -1, 0);
+	if (!renderer)
+		pexit(SDL_GetError());
+
+	w_ctx = malloc(sizeof(window_context));
+	if (!w_ctx)
+		pexit("malloc failed");
+	w_ctx->window = window;
+	w_ctx->width = dm.w;
+	w_ctx->height = dm.h;
+	w_ctx->texture = NULL;
+	w_ctx->screen_width = screen_width;
+	w_ctx->screen_height = screen_height;
+	return w_ctx;
+}
