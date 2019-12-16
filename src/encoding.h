@@ -18,6 +18,7 @@
 #pragma once
 
 #include <libavformat/avformat.h>
+#include <libavutil/time.h>
 #include "decoding.h"
 #include "io.h"
 
@@ -49,3 +50,23 @@ encoder_context *encoder_init(decoder_context *dec_ctx, int queue_capacity, wind
  * @param frame the frame to be supplied
  */
 void supply_frame(AVCodecContext *avctx, AVFrame *frame);
+
+/**
+ * Encode AVFrames and put the compressed AVPacktes in a queue
+ *
+ * Call avcodec_receive_packet in a loop, enqueue encoded packets
+ * Adds NULL packet to queue in the end.
+ *
+ * Calls pexit in case of a failure
+ * @param ptr will be casted to (encoder_context *)
+ * @return int 0 on success
+ */
+int encoder_thread(void *ptr);
+
+/**
+ * Allocate a foveation descriptor to pass to an encoder
+ *
+ * @param w_ctx window context
+ * @return float* 4-tuple: x and y coordinate, standarddeviation and offset
+ */
+float *foveation_descriptor(window_context *w_ctx);

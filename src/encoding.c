@@ -84,3 +84,90 @@ void supply_frame(AVCodecContext *avctx, AVFrame *frame)
 	else if (ret == AVERROR(ENOMEM))
 		pexit("memory allocation failed");
 }
+
+int encoder_thread(void *ptr)
+{
+	encoder_context *enc_ctx = (encoder_context *) ptr;
+	AVFrame *frame;
+	AVPacket *packet;
+	AVFrameSideData *sd;
+	float *descr;
+	size_t descr_size = 4*sizeof(float);
+	int ret;
+	int64_t *timestamp;
+
+	packet = av_packet_alloc(); //NULL check in loop.
+
+	for (;;) {
+		if (!packet)
+			pexit("av_packet_alloc failed");
+
+		ret = avcodec_receive_packet(enc_ctx->avctx, packet);
+		if (ret == 0) {
+			enqueue(enc_ctx->packet_queue, packet);
+			packet = av_packet_alloc();
+			continue;
+		} else if (ret == AVERROR(EAGAIN)) {
+			frame = dequeue(enc_ctx->frame_queue);
+
+			sd = av_frame_new_side_data(frame, AV_FRAME_DATA_FOVEATION_DESCRIPTOR, descr_size);
+			if (!sd)
+				pexit("side data allocation failed");
+			descr = foveation_descriptor(enc_ctx->w_ctx);
+			sd->data = (uint8_t *) descr;
+
+			supply_frame(enc_ctx->avctx, frame);
+
+			timestamp = malloc(sizeof(int64_t));
+			if (!timestamp)
+				perror("malloc failed");
+			*timestamp = av_gettime_relative();
+
+			enqueue(enc_ctx->lag_queue, timestamp);
+
+		} else if (ret == AVERROR_EOF) {
+			break;
+		} else if (ret == AVERROR(EINVAL)) {
+			pexit("avcodec_receive_packet failed");
+		}
+	}
+
+	enqueue(enc_ctx->packet_queue, NULL);
+	avcodec_close(enc_ctx->avctx);
+	avcodec_free_context(&enc_ctx->avctx);
+	return 0;
+}
+
+/**
+ * Allocate a foveation descriptor to pass to an encoder
+ *
+ * @param w_ctx window context
+ * @return float* 4-tuple: x and y coordinate, standarddeviation and offset
+ */
+float *foveation_descriptor(window_context *w_ctx)
+{
+	float *f;
+	int width, height;
+
+	SDL_GetWindowSize(w_ctx->window, &width, &height);
+
+	f = malloc(4*sizeof(float));
+	if (!f)
+		pexit("malloc failed");
+
+	#ifdef __MINGW32__
+	// eye-tracking
+	f[0] =
+	f[1] =
+	f[2] =
+	f[3] =
+
+	#else
+	// fake mouse motion dummy values
+	f[0] = (float) w_ctx->mouse_x / width;
+	f[1] = (float) w_ctx->mouse_y / height;
+	f[2] = 0.3;
+	f[3] = 20;
+	#endif
+	return f;
+}
