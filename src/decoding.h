@@ -71,4 +71,4 @@ int decoder_thread(void *ptr);
  * @param queue_capacity output frame queue capacity.
  * @return decoder_context* with all members initialized.
  */
-decoder_context *fov_decoder_init(Queue packet_queue);
+decoder_context *fov_decoder_init(Queue *packet_queue);

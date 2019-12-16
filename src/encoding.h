@@ -18,6 +18,7 @@
 #pragma once
 
 #include <libavformat/avformat.h>
+#include "decoding.h"
 #include "io.h"
 
 // Passed  to encoder_thread through SDL_CreateThread
@@ -29,3 +30,13 @@ typedef struct encoder_context {
 	AVDictionary *options;
 	window_context *w_ctx; //required for foveation...
 } encoder_context;
+
+/**
+ * Create and initialize an encoder context
+ *
+ * Calls pexit in case of a failure
+ * @param dec_ctx context of the previous decoder
+ * @param queue_capacity output packet queue capacity
+ * @return encoder_context with initialized fields and opened decoder
+ */
+encoder_context *encoder_init(decoder_context *dec_ctx, int queue_capacity, window_context *w_ctx);
