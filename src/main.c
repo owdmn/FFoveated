@@ -54,30 +54,6 @@ gaze_struct *gaze;
 tracker_struct *tracker;
 #endif
 
-
-/**
- * Send a packet to the decoder, check the return value for errors.
- *
- * Calls pexit in case of a failure
- * @param avctx
- * @param packet
- */
-void supply_packet(AVCodecContext *avctx, AVPacket *packet)
-{
-	int ret;
-
-	ret = avcodec_send_packet(avctx, packet);
-	if (ret == AVERROR(EAGAIN))
-		pexit("API break: decoder send and receive returns EAGAIN");
-	else if (ret == AVERROR_EOF)
-		pexit("Decoder has already been flushed");
-	else if (ret == AVERROR(EINVAL))
-		pexit("codec invalid, not open or requires flushing");
-	else if (ret == AVERROR(ENOMEM))
-		pexit("memory allocation failed");
-}
-
-
 /**
  * Decode AVPackets and put the uncompressed AVFrames in a queue.
  *

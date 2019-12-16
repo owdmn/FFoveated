@@ -41,3 +41,12 @@ typedef struct decoder_context {
  * @return decoder_context* with all members initialized.
  */
 decoder_context *source_decoder_init(reader_context *r_ctx, int queue_capacity);
+
+/**
+ * Send a packet to the decoder, check the return value for errors.
+ *
+ * Calls pexit in case of a failure
+ * @param avctx
+ * @param packet
+ */
+void supply_packet(AVCodecContext *avctx, AVPacket *packet);

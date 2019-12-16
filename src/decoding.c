@@ -56,3 +56,18 @@ decoder_context *source_decoder_init(reader_context *r_ctx, int queue_capacity)
 
 	return d;
 }
+
+void supply_packet(AVCodecContext *avctx, AVPacket *packet)
+{
+	int ret;
+
+	ret = avcodec_send_packet(avctx, packet);
+	if (ret == AVERROR(EAGAIN))
+		pexit("API break: decoder send and receive returns EAGAIN");
+	else if (ret == AVERROR_EOF)
+		pexit("Decoder has already been flushed");
+	else if (ret == AVERROR(EINVAL))
+		pexit("codec invalid, not open or requires flushing");
+	else if (ret == AVERROR(ENOMEM))
+		pexit("memory allocation failed");
+}
