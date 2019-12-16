@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <SDL2/SDL.h>
 #include <libavformat/avformat.h>
+#include <libavutil/time.h>
 
 /**
  * Print formatted error message referencing the affeted source file,
