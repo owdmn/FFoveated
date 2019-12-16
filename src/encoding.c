@@ -69,3 +69,18 @@ encoder_context *encoder_init(decoder_context *dec_ctx, int queue_capacity, wind
 
 	return enc_ctx;
 }
+
+void supply_frame(AVCodecContext *avctx, AVFrame *frame)
+{
+	int ret;
+
+	ret = avcodec_send_frame(avctx, frame);
+	if (ret == AVERROR(EAGAIN))
+		pexit("API break: encoder send and receive returns EAGAIN");
+	else if (ret == AVERROR_EOF)
+		pexit("Encoder has already been flushed");
+	else if (ret == AVERROR(EINVAL))
+		pexit("codec invalid, not open or requires flushing");
+	else if (ret == AVERROR(ENOMEM))
+		pexit("memory allocation failed");
+}

@@ -40,3 +40,12 @@ typedef struct encoder_context {
  * @return encoder_context with initialized fields and opened decoder
  */
 encoder_context *encoder_init(decoder_context *dec_ctx, int queue_capacity, window_context *w_ctx);
+
+/**
+ * Supply the given codec with a frame, handle errors appropriately.
+ *
+ * Calls pexit in dase of a failure.
+ * @param avctx context of the codec being supplied
+ * @param frame the frame to be supplied
+ */
+void supply_frame(AVCodecContext *avctx, AVFrame *frame);

@@ -89,28 +89,6 @@ void context_free(reader_context **r_ctx, decoder_context **d_ctx)
 
 
 /**
- * Supply the given codec with a frame, handle errors appropriately.
- *
- * Calls pexit in dase of a failure.
- * @param avctx context of the codec being supplied
- * @param frame the frame to be supplied
- */
-void supply_frame(AVCodecContext *avctx, AVFrame *frame)
-{
-	int ret;
-
-	ret = avcodec_send_frame(avctx, frame);
-	if (ret == AVERROR(EAGAIN))
-		pexit("API break: encoder send and receive returns EAGAIN");
-	else if (ret == AVERROR_EOF)
-		pexit("Encoder has already been flushed");
-	else if (ret == AVERROR(EINVAL))
-		pexit("codec invalid, not open or requires flushing");
-	else if (ret == AVERROR(ENOMEM))
-		pexit("memory allocation failed");
-}
-
-/**
  * Allocate a foveation descriptor to pass to an encoder
  *
  * @param w_ctx window context
