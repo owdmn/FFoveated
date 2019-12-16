@@ -262,3 +262,32 @@ window_context *window_init(float screen_width, float screen_height)
 	w_ctx->screen_height = screen_height;
 	return w_ctx;
 }
+
+void realloc_texture(window_context *w_ctx, AVFrame *frame)
+{
+	int ret;
+	int old_width;
+	int old_height;
+	int old_access;
+	Uint32 old_format;
+
+	if (w_ctx->texture) {
+		/* texture already exists - check if we need to modify it */
+		ret = SDL_QueryTexture(w_ctx->texture, &old_format, &old_access,
+											   &old_width, &old_height);
+		if (ret < 0)
+			pexit("SDL_QueryTexture failed");
+
+		/* if the specs agree, don't change it, otherwise detroy it */
+		if (frame->width == old_width && frame->height == old_height)
+			return;
+		SDL_DestroyTexture(w_ctx->texture);
+	}
+
+	w_ctx->texture = SDL_CreateTexture(SDL_GetRenderer(w_ctx->window),
+										   SDL_PIXELFORMAT_YV12,
+										   SDL_TEXTUREACCESS_TARGET,
+										   frame->width, frame->height);
+	if (!w_ctx->texture)
+		pexit("SDL_CreateTexture failed");
+}

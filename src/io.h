@@ -179,3 +179,16 @@ reader_context *reader_init(char *filename, int queue_capacity);
  * @return window_context with initialized defaults
  */
 window_context *window_init(float screen_width, float screen_height);
+
+/**
+ * (Re)allocate a the texture member of a window_context
+ *
+ * If no existing texture is present, create a suitably sized one.
+ * If the existing texture and the new frame to be rendered agree in dimensions,
+ * leave the texture unmodified and return. If they disagree, destroy the old
+ * texture and create a suitable one instead.
+ * Calls pexit in case of a failure
+ * @param w_ctx window context whose texture member is being updated.
+ * @param frame frame to be rendered to the texture.
+ */
+void realloc_texture(window_context *w_ctx, AVFrame *frame);
