@@ -32,24 +32,8 @@
 #include "encoding.h"
 
 #ifdef __MINGW32__
+#include "et.h"
 #include "iViewXAPI.h"
-typedef struct gaze_struct {
-	int screen_x;
-	int screen_y;
-	double diam_l; //pupil diameter
-	double diam_r;
-	double distance; //mean eye-screen dist
-	SDL_mutex *mutex;
-} gaze_struct;
-
-typedef struct tracker_position {
-	double screen_width;
-	double screen_height;
-	double tracker_depth;
-	double tracker_height;
-	double tracker_angle; //20° with the SMI bracket
-} tracker_position;
-
 gaze_struct *gaze;
 tracker_struct *tracker;
 #endif
