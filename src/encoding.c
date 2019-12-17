@@ -70,6 +70,20 @@ encoder_context *encoder_init(decoder_context *dec_ctx, int queue_capacity, wind
 	return enc_ctx;
 }
 
+void encoder_free(encoder_context **e_ctx)
+{
+	encoder_context *e;
+
+	e = *e_ctx;
+	free_queue(e->packet_queue);
+	free_queue(e->lag_queue);
+	avcodec_free_context(&e->avctx);
+	av_dict_free(&e->options);
+
+	free(e);
+	*e_ctx = NULL;
+}
+
 void supply_frame(AVCodecContext *avctx, AVFrame *frame)
 {
 	int ret;

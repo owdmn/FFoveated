@@ -43,6 +43,15 @@ typedef struct encoder_context {
 encoder_context *encoder_init(decoder_context *dec_ctx, int queue_capacity, window_context *w_ctx);
 
 /**
+ * Free the encoder context and associated data.
+ *
+ * frame_queue and w_ctx have to be freed by the respecive decoder_free
+ * and window_free funcions.
+ * @param e_ctx encoder_context to be freed.
+ */
+void encoder_free(encoder_context **e_ctx);
+
+/**
  * Supply the given codec with a frame, handle errors appropriately.
  *
  * Calls pexit in dase of a failure.
