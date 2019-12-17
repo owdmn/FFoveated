@@ -108,7 +108,6 @@ int decoder_thread(void *ptr)
 	//enqueue flush packet in
 	enqueue(dec_ctx->frame_queue, NULL);
 	avcodec_close(avctx);
-	avcodec_free_context(&avctx);
 	return 0;
 }
 
@@ -140,4 +139,16 @@ decoder_context *fov_decoder_init(Queue *packet_queue)
 	d->avctx = avctx;
 
 	return d;
+}
+
+void decoder_free(decoder_context **d_ctx)
+{
+	decoder_context *d;
+
+	d = *d_ctx;
+	avcodec_free_context(&d->avctx);
+	free_queue(d->frame_queue);
+	/* packet_queue is freed by reader_free! */
+	free(d);
+	d = NULL;
 }

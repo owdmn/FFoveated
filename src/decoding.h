@@ -72,3 +72,13 @@ int decoder_thread(void *ptr);
  * @return decoder_context* with all members initialized.
  */
 decoder_context *fov_decoder_init(Queue *packet_queue);
+
+/**
+ * Free the decoder_context and associated data, set d_ctx to NULL.
+ *
+ * Does NOT free packet_queue, which is freed through freeing its source
+ * context, e.g. a reader or an encoder.
+ * Finally, set d_ctx to NULL.
+ * @param d_ctx decoder context to be freed.
+ */
+void decoder_free(decoder_context **d_ctx);

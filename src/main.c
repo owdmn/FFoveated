@@ -145,6 +145,7 @@ int main(int argc, char **argv)
 		SDL_WaitThread(encoder, NULL);
 		SDL_WaitThread(fov_decoder, NULL);
 
+		decoder_free(&source_d_ctx);
 		reader_free(&r_ctx);
 	}
 
