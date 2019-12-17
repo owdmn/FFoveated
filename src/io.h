@@ -65,7 +65,7 @@ typedef struct Queue {
  * @param capacity number of elements the queue is able to store.
  * @return Queue* ready to use queue. See enqueue, dequeue, free_queue.
  */
-Queue *create_queue(size_t capacity);
+Queue *queue_init(size_t capacity);
 
 /**
  * Free and dismantle a Queue structure.
@@ -75,7 +75,7 @@ Queue *create_queue(size_t capacity);
  * This function does not take care of any remaining elements in the queue,
  * which have to be handled manually. Caution: This can lead to data leaks.
  */
-void free_queue(Queue *q);
+void queue_free(Queue *q);
 
 /**
  * Add data to end of the queue.
@@ -86,7 +86,7 @@ void free_queue(Queue *q);
  * @param q pointer to a valid Queue structure.
  * @param data will be added to q->data.
  */
-void enqueue(Queue *q, void *data);
+void queue_add(Queue *q, void *data);
 
 /**
  * Extract the first element of the queue.
@@ -99,7 +99,7 @@ void enqueue(Queue *q, void *data);
  * @param q pointer to a valid Queue struct.
  * @return void* the formerly first element of q.
  */
-void *dequeue(Queue *q);
+void *queue_extract(Queue *q);
 
 /**
  * Parse a file line by line.

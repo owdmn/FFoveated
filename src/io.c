@@ -26,7 +26,7 @@ void pexit_(const char *msg, const char *file, const int line)
 	exit(EXIT_FAILURE);
 }
 
-Queue *create_queue(size_t capacity)
+Queue *queue_init(size_t capacity)
 {
 	Queue *q;
 
@@ -51,7 +51,7 @@ Queue *create_queue(size_t capacity)
 	return q;
 }
 
-void free_queue(Queue *q)
+void queue_free(Queue *q)
 {
 	SDL_DestroyMutex(q->mutex);
 	SDL_DestroyCond(q->full);
@@ -60,7 +60,7 @@ void free_queue(Queue *q)
 	free(q);
 }
 
-void enqueue(Queue *q, void *data)
+void queue_append(Queue *q, void *data)
 {
 	unsigned int new_rear;
 
@@ -68,16 +68,13 @@ void enqueue(Queue *q, void *data)
 		pexit(SDL_GetError());
 
 	new_rear = (q->rear + 1) % (q->capacity + 1);
-
 	//check if full
 	if (new_rear == q->front) {
 		if (SDL_CondWait(q->full, q->mutex))
 			pexit(SDL_GetError());
 	}
-
 	q->data[q->rear] = data;
 	q->rear = new_rear;
-
 	/* at least one item is now queued*/
 	if (SDL_CondSignal(q->empty))
 		pexit(SDL_GetError());
@@ -87,7 +84,7 @@ void enqueue(Queue *q, void *data)
 
 }
 
-void *dequeue(Queue *q)
+void *queue_extract(Queue *q)
 {
 	void *data;
 
