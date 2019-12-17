@@ -104,16 +104,25 @@ void *dequeue(Queue *q);
 /**
  * Parse a file line by line.
  *
- * At most PATH_MAX characters per line are supported, the main purpose
+ * At most PATH_MAX characters per line are supported, the purpose
  * is to parse a file containing pathnames.
- * Each line is sanitized: A trailing newline characters are replaced
+ * Each line is sanitized: A trailing newline character is replaced
  * with a nullbyte. The returned pointer array is also NULL terminated.
+ * Can be freed by using free_lines.
  * All contained pointers and the array itself must be passed to free()
  * Calls pexit in case of a failure.
  * @param pathname path to an ascii file to be opened and parsed
  * @return NULL-terminated array of char* to line contents
  */
-char **parse_file_lines(const char *pathname);
+char **parse_lines(const char *pathname);
+
+/**
+ * Free an array of char pointers allocated by parse_lines.
+ *
+ * Free each char* in the array, finally free lines itself and set it to NULL.
+ * @param lines char* array to be freed.
+ */
+void free_lines(char **lines);
 
 // Passed to reader_thread through SDL_CreateThread
 typedef struct reader_context {

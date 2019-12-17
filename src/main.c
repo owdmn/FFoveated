@@ -96,7 +96,7 @@ void event_loop(window_context *w_ctx)
 
 int main(int argc, char **argv)
 {
-	char **video_files;
+	char **video_paths;
 	float screen_width, screen_height; //physical display dimensions in mm
 	reader_context *r_ctx;
 	decoder_context *source_d_ctx, *fov_d_ctx;
@@ -121,12 +121,12 @@ int main(int argc, char **argv)
 	setup_ivx();
 #endif
 
-	video_files = parse_file_lines(argv[1]);
+	video_paths = parse_lines(argv[1]);
 	w_ctx = window_init(screen_width, screen_height);
 
-	for (int i = 0; video_files[i]; i++) {
+	for (int i = 0; video_paths[i]; i++) {
 
-		r_ctx = reader_init(video_files[i], queue_capacity);
+		r_ctx = reader_init(video_paths[i], queue_capacity);
 		source_d_ctx = source_decoder_init(r_ctx, queue_capacity);
 		e_ctx = encoder_init(source_d_ctx, 1, w_ctx);
 		fov_d_ctx = fov_decoder_init(e_ctx->packet_queue);
@@ -146,5 +146,6 @@ int main(int argc, char **argv)
 		SDL_WaitThread(fov_decoder, NULL);
 	}
 
+	free_lines(video_paths);
 	return EXIT_SUCCESS;
 }

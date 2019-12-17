@@ -111,7 +111,7 @@ void *dequeue(Queue *q)
 	return data;
 }
 
-char **parse_file_lines(const char *pathname)
+char **parse_lines(const char *pathname)
 {
 	FILE *fp;
 	char line_buf[PATH_MAX];
@@ -148,6 +148,15 @@ char **parse_file_lines(const char *pathname)
 	lines[used] = NULL;		//termination symbol
 
 	return lines;
+}
+
+void free_lines(char **lines)
+{
+	char **c;
+	for(c=lines; *c; c++)
+		free(*c);
+	free(lines);
+	lines = NULL;
 }
 
 int reader_thread(void *ptr)
