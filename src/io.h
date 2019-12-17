@@ -122,7 +122,7 @@ char **parse_lines(const char *pathname);
  * Free each char* in the array, finally free lines itself and set it to NULL.
  * @param lines char* array to be freed.
  */
-void free_lines(char **lines);
+void free_lines(char ***lines);
 
 // Passed to reader_thread through SDL_CreateThread
 typedef struct reader_context {

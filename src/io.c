@@ -150,13 +150,13 @@ char **parse_lines(const char *pathname)
 	return lines;
 }
 
-void free_lines(char **lines)
+void free_lines(char ***lines)
 {
 	char **c;
-	for(c=lines; *c; c++)
+	for(c=*lines; *c; c++)
 		free(*c);
-	free(lines);
-	lines = NULL;
+	free(*lines);
+	*lines = NULL;
 }
 
 int reader_thread(void *ptr)

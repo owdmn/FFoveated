@@ -146,6 +146,6 @@ int main(int argc, char **argv)
 		SDL_WaitThread(fov_decoder, NULL);
 	}
 
-	free_lines(video_paths);
+	free_lines(&video_paths);
 	return EXIT_SUCCESS;
 }
