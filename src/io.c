@@ -245,7 +245,7 @@ window_context *window_init(float screen_width, float screen_height)
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
 
 
-	flags = SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN_DESKTOP;
+	flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_FULLSCREEN_DESKTOP;
 	window = SDL_CreateWindow("FFoveated",
 		SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED,
