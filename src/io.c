@@ -233,6 +233,18 @@ reader_context *reader_init(char *filename, int queue_capacity)
 	return r;
 }
 
+void reader_free(reader_context **r_ctx)
+{
+	reader_context *r;
+
+	r = *r_ctx;
+	free(r->filename);
+	free_queue(r->packet_queue);
+	avformat_free_context(r->format_ctx);
+	free(*r_ctx);
+	*r_ctx = NULL;
+}
+
 window_context *window_init(float screen_width, float screen_height)
 {
 	window_context *w_ctx;

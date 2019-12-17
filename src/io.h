@@ -177,12 +177,20 @@ void set_window_queues(window_context *w_ctx, Queue *frames, Queue *lags);
  *
  * Open and demultiplex the file given in reader_ctx->filename.
  * Identify the "best" video stream index, usually there will only be one.
+ * Must be freed through reader_free.
  *
  * Calls pexit in case of a failure.
  * @param filename the file the reader thread will try to open
  * @return reader_context* to a heap-allocated instance.
  */
 reader_context *reader_init(char *filename, int queue_capacity);
+
+/**
+ * Free the reader_context and all allocated resources,
+ * set r-ctx to NULL.
+ * @param r_ctx reader context to be freed.
+ */
+void reader_free(reader_context **r_ctx);
 
 /**
  * Create and initialize a window_context.
