@@ -1,0 +1,3 @@
+# Override github linguist mislabelings
+*.c linguist-language=C
+*.h linguist-language=C
