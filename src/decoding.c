@@ -95,6 +95,7 @@ int decoder_thread(void *ptr)
 			//provide another packet to the decoder
 			packet = queue_extract(dec_ctx->packet_queue);
 			supply_packet(avctx, packet);
+			av_packet_free(&packet);
 			continue;
 		} else if (ret == AVERROR_EOF) {
 			break;
