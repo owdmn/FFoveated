@@ -182,6 +182,7 @@ float *foveation_descriptor(window_context *w_ctx)
 
 	#else
 	// fake mouse motion dummy values
+	SDL_GetMouseState(&w_ctx->mouse_x, &w_ctx->mouse_y);
 	f[0] = (float) w_ctx->mouse_x / width;
 	f[1] = (float) w_ctx->mouse_y / height;
 	f[2] = 0.3;
