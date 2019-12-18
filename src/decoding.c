@@ -51,7 +51,7 @@ decoder_context *source_decoder_init(reader_context *r_ctx, int queue_capacity)
 		pexit("malloc failed");
 
 	d->packet_queue = r_ctx->packet_queue;
-	d->frame_queue = create_queue(queue_capacity);
+	d->frame_queue = queue_init(queue_capacity);
 	d->avctx = avctx;
 
 	return d;
@@ -88,12 +88,12 @@ int decoder_thread(void *ptr)
 		ret = avcodec_receive_frame(avctx, frame);
 		if (ret == 0) {
 			// valid frame - enqueue and allocate new buffer
-			enqueue(dec_ctx->frame_queue, frame);
+			queue_append(dec_ctx->frame_queue, frame);
 			frame = av_frame_alloc();
 			continue;
 		} else if (ret == AVERROR(EAGAIN)) {
 			//provide another packet to the decoder
-			packet = dequeue(dec_ctx->packet_queue);
+			packet = queue_extract(dec_ctx->packet_queue);
 			supply_packet(avctx, packet);
 			continue;
 		} else if (ret == AVERROR_EOF) {
@@ -106,7 +106,7 @@ int decoder_thread(void *ptr)
 	}
 
 	//enqueue flush packet in
-	enqueue(dec_ctx->frame_queue, NULL);
+	queue_append(dec_ctx->frame_queue, NULL);
 	avcodec_close(avctx);
 	return 0;
 }
@@ -135,7 +135,7 @@ decoder_context *fov_decoder_init(Queue *packet_queue)
 		pexit("malloc failed");
 
 	d->packet_queue = packet_queue;
-	d->frame_queue = create_queue(1);
+	d->frame_queue = queue_init(1);
 	d->avctx = avctx;
 
 	return d;
@@ -147,7 +147,7 @@ void decoder_free(decoder_context **d_ctx)
 
 	d = *d_ctx;
 	avcodec_free_context(&d->avctx);
-	free_queue(d->frame_queue);
+	queue_free(d->frame_queue);
 	/* packet_queue is freed by reader_free! */
 	free(d);
 	d = NULL;

@@ -179,10 +179,10 @@ int reader_thread(void *ptr)
 			av_packet_free(&pkt);
 			continue;
 		}
-		enqueue(r_ctx->packet_queue, pkt);
+		queue_append(r_ctx->packet_queue, pkt);
 	}
 	/* finally enqueue NULL to enter draining mode */
-	enqueue(r_ctx->packet_queue, NULL);
+	queue_append(r_ctx->packet_queue, NULL);
 	avformat_close_input(&r_ctx->format_ctx); //FIXME: Is it reasonable to call this here already?
 	return 0;
 }
@@ -210,7 +210,7 @@ reader_context *reader_init(char *filename, int queue_capacity)
 		pexit("video stream or decoder not found");
 
 	format_ctx->streams[stream_index]->discard = AVDISCARD_DEFAULT;
-	packet_queue = create_queue(queue_capacity);
+	packet_queue = queue_init(queue_capacity);
 
 	// allocate and set the context
 	r = malloc(sizeof(reader_context));
@@ -236,7 +236,7 @@ void reader_free(reader_context **r_ctx)
 
 	r = *r_ctx;
 	free(r->filename);
-	free_queue(r->packet_queue);
+	queue_free(r->packet_queue);
 	avformat_free_context(r->format_ctx);
 	free(*r_ctx);
 	*r_ctx = NULL;
@@ -356,7 +356,7 @@ int frame_refresh(window_context *w_ctx)
 	SDL_SetRenderDrawColor(r, 0, 0, 0, 255);
 	SDL_RenderClear(r);
 
-	frame = dequeue(w_ctx->frame_queue);
+	frame = queue_extract(w_ctx->frame_queue);
 	if (!frame)
 		return 1;
 
@@ -376,7 +376,7 @@ int frame_refresh(window_context *w_ctx)
 	upts = (2 * 1000000 * frame->pts * w_ctx->time_base.num) / w_ctx->time_base.den;
 	uremaining = w_ctx->time_start + upts - av_gettime_relative();
 
-	encoder_timestamp = dequeue(w_ctx->lag_queue);
+	encoder_timestamp = queue_extract(w_ctx->lag_queue);
 	free(encoder_timestamp);
 	#ifdef debug
 	delay = (av_gettime_relative() - *encoder_timestamp) / 1000000;

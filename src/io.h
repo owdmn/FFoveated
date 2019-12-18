@@ -86,7 +86,7 @@ void queue_free(Queue *q);
  * @param q pointer to a valid Queue structure.
  * @param data will be added to q->data.
  */
-void queue_add(Queue *q, void *data);
+void queue_append(Queue *q, void *data);
 
 /**
  * Extract the first element of the queue.

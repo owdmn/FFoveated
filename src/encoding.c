@@ -61,8 +61,8 @@ encoder_context *encoder_init(decoder_context *dec_ctx, int queue_capacity, wind
 		pexit("avcodec_open2 failed");
 
 	enc_ctx->frame_queue = dec_ctx->frame_queue;
-	enc_ctx->packet_queue = create_queue(queue_capacity);
-	enc_ctx->lag_queue = create_queue(queue_capacity);
+	enc_ctx->packet_queue = queue_init(queue_capacity);
+	enc_ctx->lag_queue = queue_init(queue_capacity);
 	enc_ctx->avctx = avctx;
 	enc_ctx->options = options;
 	enc_ctx->w_ctx = w_ctx;
@@ -75,8 +75,8 @@ void encoder_free(encoder_context **e_ctx)
 	encoder_context *e;
 
 	e = *e_ctx;
-	free_queue(e->packet_queue);
-	free_queue(e->lag_queue);
+	queue_free(e->packet_queue);
+	queue_free(e->lag_queue);
 	avcodec_free_context(&e->avctx);
 	av_dict_free(&e->options);
 
@@ -118,11 +118,11 @@ int encoder_thread(void *ptr)
 
 		ret = avcodec_receive_packet(enc_ctx->avctx, packet);
 		if (ret == 0) {
-			enqueue(enc_ctx->packet_queue, packet);
+			queue_append(enc_ctx->packet_queue, packet);
 			packet = av_packet_alloc();
 			continue;
 		} else if (ret == AVERROR(EAGAIN)) {
-			frame = dequeue(enc_ctx->frame_queue);
+			frame = queue_extract(enc_ctx->frame_queue);
 
 			if (!frame)
 				break;
@@ -140,7 +140,7 @@ int encoder_thread(void *ptr)
 				perror("malloc failed");
 			*timestamp = av_gettime_relative();
 
-			enqueue(enc_ctx->lag_queue, timestamp);
+			queue_append(enc_ctx->lag_queue, timestamp);
 
 		} else if (ret == AVERROR_EOF) {
 			break;
@@ -149,7 +149,7 @@ int encoder_thread(void *ptr)
 		}
 	}
 
-	enqueue(enc_ctx->packet_queue, NULL);
+	queue_append(enc_ctx->packet_queue, NULL);
 	avcodec_close(enc_ctx->avctx);
 	avcodec_free_context(&enc_ctx->avctx);
 	return 0;
