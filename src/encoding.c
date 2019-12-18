@@ -134,6 +134,7 @@ int encoder_thread(void *ptr)
 			sd->data = (uint8_t *) descr;
 
 			supply_frame(enc_ctx->avctx, frame);
+			av_frame_free(&frame);
 
 			timestamp = malloc(sizeof(int64_t));
 			if (!timestamp)
