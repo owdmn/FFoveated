@@ -33,6 +33,14 @@ typedef struct encoder_context {
 } encoder_context;
 
 /**
+ * ids for supported encoders
+ */
+typedef enum {
+	LIBX264,
+	LIBX265,
+} enc_id;
+
+/**
  * Create and initialize an encoder context
  *
  * Calls pexit in case of a failure
