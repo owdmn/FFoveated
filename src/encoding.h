@@ -48,7 +48,7 @@ typedef enum {
  * @param queue_capacity output packet queue capacity
  * @return encoder_context with initialized fields and opened decoder
  */
-encoder_context *encoder_init(decoder_context *dec_ctx, int queue_capacity, window_context *w_ctx);
+encoder_context *encoder_init(enc_id id, decoder_context *dec_ctx, int queue_capacity, window_context *w_ctx);
 
 /**
  * Free the encoder context and associated data.

@@ -25,9 +25,8 @@
  * @param queue_capacity output packet queue capacity
  * @return encoder_context with initialized fields and opened decoder
  */
-encoder_context *encoder_init(decoder_context *dec_ctx, int queue_capacity, window_context *w_ctx)
+encoder_context *encoder_init(enc_id id, decoder_context *dec_ctx, int queue_capacity, window_context *w_ctx)
 {
-	int ret;
 	encoder_context *enc_ctx;
 	AVCodecContext *avctx;
 	AVCodec *codec;
@@ -37,7 +36,25 @@ encoder_context *encoder_init(decoder_context *dec_ctx, int queue_capacity, wind
 	if (!enc_ctx)
 		pexit("malloc failed");
 
-	codec = avcodec_find_encoder_by_name("libx264");
+	switch (id) {
+		case LIBX264:
+		av_dict_set(&options, "preset", "ultrafast", 0);
+		av_dict_set(&options, "tune", "zerolatency", 0);
+		av_dict_set(&options, "aq-mode", "autovariance", 0);
+		av_dict_set(&options, "gop-size", "3", 0);
+		codec = avcodec_find_encoder_by_name("libx264");
+		break;
+		case LIBX265:
+		av_dict_set(&options, "preset", "ultrafast", 0);
+		av_dict_set(&options, "tune", "zerolatency", 0);
+		av_dict_set(&options, "x265-params", "aq-mode=autovariance", 0);
+		av_dict_set(&options, "gop-size", "3", 0);
+		codec = avcodec_find_encoder_by_name("libx265");
+		break;
+		default:
+		codec = NULL;
+	}
+
 	if (!codec)
 		pexit("encoder not found");
 
@@ -50,14 +67,7 @@ encoder_context *encoder_init(decoder_context *dec_ctx, int queue_capacity, wind
 	avctx->width = dec_ctx->avctx->width;
 	avctx->height = dec_ctx->avctx->height;
 
-	ret = 0;
-	ret |= av_dict_set(&options, "preset", "ultrafast", 0);
-	ret |= av_dict_set(&options, "tune", "zerolatency", 0);
-	ret |= av_dict_set(&options, "aq-mode", "variance", 0);
-	ret |= av_dict_set(&options, "gop-size", "3", 0);
-
-	ret = avcodec_open2(avctx, avctx->codec, &options);
-	if (ret < 0)
+	if (avcodec_open2(avctx, avctx->codec, &options) < 0)
 		pexit("avcodec_open2 failed");
 
 	enc_ctx->frame_queue = dec_ctx->frame_queue;
