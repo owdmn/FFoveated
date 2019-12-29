@@ -350,7 +350,7 @@ int frame_refresh(window_context *w_ctx)
 	int64_t uremaining; //remaining time in micro seconds
 	int64_t *encoder_timestamp;
 	#ifdef DEBUG
-	double delay;
+	int64_t delay;
 	#endif
 
 	SDL_SetRenderDrawColor(r, 0, 0, 0, 255);
@@ -380,7 +380,7 @@ int frame_refresh(window_context *w_ctx)
 	free(encoder_timestamp);
 	#ifdef DEBUG
 	delay = (av_gettime_relative() - *encoder_timestamp) / 1000000;
-	fprintf(stdout, "remaining: %ld upts: %ld, frame->pts %ld, num %d, den %d, time %ld, delay %lf\n",
+	fprintf(stdout, "remaining: %ld upts: %ld, frame->pts %ld, num %d, den %d, time %ld, delay %ld\n",
 	uremaining, upts, frame->pts, w_ctx->time_base.num, w_ctx->time_base.den, av_gettime_relative(), delay);
 	#endif
 
