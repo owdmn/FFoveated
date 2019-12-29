@@ -19,7 +19,6 @@
 
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>
-#include "decoding.h"
 #include "io.h"
 
 // Passed  to encoder_thread through SDL_CreateThread
@@ -44,11 +43,11 @@ typedef enum {
  * Create and initialize an encoder context
  *
  * Calls pexit in case of a failure
- * @param dec_ctx context of the previous decoder
+ * @param avctx av codec context of the previous decoder: dec_ctx->avctx
  * @param queue_capacity output packet queue capacity
  * @return encoder_context with initialized fields and opened decoder
  */
-encoder_context *encoder_init(enc_id id, decoder_context *dec_ctx, int queue_capacity, window_context *w_ctx);
+encoder_context *encoder_init(enc_id id, AVCodecConext *avctx, int queue_capacity, window_context *w_ctx);
 
 /**
  * Free the encoder context and associated data.

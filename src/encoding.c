@@ -25,7 +25,7 @@
  * @param queue_capacity output packet queue capacity
  * @return encoder_context with initialized fields and opened decoder
  */
-encoder_context *encoder_init(enc_id id, decoder_context *dec_ctx, int queue_capacity, window_context *w_ctx)
+encoder_context *encoder_init(enc_id id, AVCodecContext *dec_avctx, int queue_capacity, window_context *w_ctx)
 {
 	encoder_context *enc_ctx;
 	AVCodecContext *avctx;
@@ -47,7 +47,7 @@ encoder_context *encoder_init(enc_id id, decoder_context *dec_ctx, int queue_cap
 		case LIBX265:
 		av_dict_set(&options, "preset", "ultrafast", 0);
 		av_dict_set(&options, "tune", "zerolatency", 0);
-		av_dict_set(&options, "x265-params", "aq-mode=autovariance", 0);
+		av_dict_set(&options, "x265-params", "aq-mode=2", 0); //autovariance
 		av_dict_set(&options, "gop-size", "3", 0);
 		codec = avcodec_find_encoder_by_name("libx265");
 		break;
@@ -62,15 +62,15 @@ encoder_context *encoder_init(enc_id id, decoder_context *dec_ctx, int queue_cap
 	if (!avctx)
 		pexit("avcodec_alloc_context3 failed");
 
-	avctx->time_base = dec_ctx->avctx->time_base;
+	avctx->time_base = dec_avctx->time_base;
 	avctx->pix_fmt = codec->pix_fmts[0]; //first supported pixel format
-	avctx->width = dec_ctx->avctx->width;
-	avctx->height = dec_ctx->avctx->height;
+	avctx->width = dec_avctx->width;
+	avctx->height = dec_avctx->height;
 
 	if (avcodec_open2(avctx, avctx->codec, &options) < 0)
 		pexit("avcodec_open2 failed");
 
-	enc_ctx->frame_queue = dec_ctx->frame_queue;
+	enc_ctx->frame_queue = dec_avctx->frame_queue;
 	enc_ctx->packet_queue = queue_init(queue_capacity);
 	enc_ctx->lag_queue = queue_init(queue_capacity);
 	enc_ctx->avctx = avctx;
