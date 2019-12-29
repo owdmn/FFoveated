@@ -143,6 +143,7 @@ int encoder_thread(void *ptr)
 			descr = foveation_descriptor(enc_ctx->w_ctx);
 			sd->data = (uint8_t *) descr;
 
+			frame->pict_type = 0; //keep undefined to prevent warnings
 			supply_frame(enc_ctx->avctx, frame);
 			av_frame_free(&frame);
 
