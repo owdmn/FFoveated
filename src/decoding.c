@@ -112,14 +112,24 @@ int decoder_thread(void *ptr)
 	return 0;
 }
 
-decoder_context *fov_decoder_init(Queue *packet_queue)
+decoder_context *fov_decoder_init(Queue *packet_queue, enc_id id)
 {
 	AVCodecContext *avctx;
 	AVCodec *codec;
 	decoder_context *d;
 	int ret;
 
-	codec = avcodec_find_decoder(AV_CODEC_ID_H264);
+	switch (id) {
+		case LIBX264:
+		codec = avcodec_find_decoder_by_name("libx264");
+		break;
+		case LIBX265:
+		codec = avcodec_find_decoder_by_name("libx265");
+		break;
+		default:
+		codec = NULL;
+	}
+
 	if (!codec)
 		pexit("avcodec_find_decoder_by_name failed");
 
