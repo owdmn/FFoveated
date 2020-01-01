@@ -97,6 +97,7 @@ int main(int argc, char **argv)
 {
 	char **video_paths;
 	float screen_width, screen_height; //physical display dimensions in mm
+	enc_id id;
 	reader_context *r_ctx;
 	decoder_context *source_d_ctx, *fov_d_ctx;
 	encoder_context *e_ctx;
@@ -112,6 +113,7 @@ int main(int argc, char **argv)
 	// FIXME: Hardcoded 15.6" 16:9 FHD notebook display dimensions
 	screen_width = 345;
 	screen_height = 194;
+	id = LIBX264;
 
 	signal(SIGTERM, exit);
 	signal(SIGINT, exit);
@@ -123,12 +125,13 @@ int main(int argc, char **argv)
 	video_paths = parse_lines(argv[1]);
 	w_ctx = window_init(screen_width, screen_height);
 
+
 	for (int i = 0; video_paths[i]; i++) {
 
 		r_ctx = reader_init(video_paths[i], queue_capacity);
 		source_d_ctx = source_decoder_init(r_ctx, queue_capacity);
-		e_ctx = encoder_init(LIBX265, source_d_ctx->avctx, w_ctx, source_d_ctx->frame_queue);
-		fov_d_ctx = fov_decoder_init(e_ctx->packet_queue, LIBX265);
+		e_ctx = encoder_init(id, source_d_ctx->avctx, w_ctx, source_d_ctx->frame_queue);
+		fov_d_ctx = fov_decoder_init(id, e_ctx->packet_queue);
 
 		reader = SDL_CreateThread(reader_thread, "reader_thread", r_ctx);
 		source_decoder = SDL_CreateThread(decoder_thread, "source_decoder_thread", source_d_ctx);

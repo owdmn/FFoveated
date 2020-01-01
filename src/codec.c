@@ -320,7 +320,7 @@ int decoder_thread(void *ptr)
 	return 0;
 }
 
-decoder_context *fov_decoder_init(Queue *packet_queue, enc_id id)
+decoder_context *fov_decoder_init(enc_id id, Queue *packet_queue)
 {
 	AVCodecContext *avctx;
 	AVCodec *codec;
