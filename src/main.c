@@ -28,8 +28,7 @@
 #include <libavutil/time.h>
 #include <libavutil/frame.h>
 #include "io.h"
-#include "decoding.h"
-#include "encoding.h"
+#include "codec.h"
 
 #ifdef ET
 #include "et.h"
@@ -128,8 +127,8 @@ int main(int argc, char **argv)
 
 		r_ctx = reader_init(video_paths[i], queue_capacity);
 		source_d_ctx = source_decoder_init(r_ctx, queue_capacity);
-		e_ctx = encoder_init(LIBX265, source_d_ctx, 1, w_ctx);
-		fov_d_ctx = fov_decoder_init(e_ctx->packet_queue);
+		e_ctx = encoder_init(LIBX265, source_d_ctx->avctx, 1, w_ctx, source_d_ctx->frame_queue);
+		fov_d_ctx = fov_decoder_init(e_ctx->packet_queue, LIBX265);
 
 		reader = SDL_CreateThread(reader_thread, "reader_thread", r_ctx);
 		source_decoder = SDL_CreateThread(decoder_thread, "source_decoder_thread", source_d_ctx);
