@@ -48,18 +48,18 @@ void display_usage(char *progname)
  * Calls pexit in case of a failure.
  * @param w_ctx window_context to which rendering and event handling applies.
  */
-void event_loop(window_context *w_ctx)
+void event_loop(window_context *wc)
 {
 	SDL_Event event;
 	int queue_drained = 0;
 
-	if (w_ctx->time_start != -1)
+	if (wc->time_start != -1)
 		pexit("Error: call set_timing first");
 
 	for (;;) {
 		/* check for events to handle, meanwhile just render frames */
 		while (!SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {
-			if (frame_refresh(w_ctx)) {
+			if (frame_refresh(wc)) {
 				queue_drained = 1;
 				break;
 			}
@@ -78,15 +78,15 @@ void event_loop(window_context *w_ctx)
 		case SDL_WINDOWEVENT:
 			switch (event.window.event) {
 			case SDL_WINDOWEVENT_RESIZED:
-				w_ctx->width = event.window.data1;
-				w_ctx->height = event.window.data2;
-				SDL_DestroyTexture(w_ctx->texture);
-				w_ctx->texture = NULL;
+				wc->width = event.window.data1;
+				wc->height = event.window.data2;
+				SDL_DestroyTexture(wc->texture);
+				wc->texture = NULL;
 			break;
 			}
 			break;
 		case SDL_MOUSEMOTION:
-			SDL_GetMouseState(&w_ctx->mouse_x, &w_ctx->mouse_y);
+			SDL_GetMouseState(&wc->mouse_x, &wc->mouse_y);
 			break;
 		}
 
@@ -95,14 +95,14 @@ void event_loop(window_context *w_ctx)
 
 int main(int argc, char **argv)
 {
-	char **video_paths;
+	char **paths;
 	float screen_width, screen_height; //physical display dimensions in mm
 	enc_id id;
-	reader_context *r_ctx;
-	decoder_context *source_d_ctx, *fov_d_ctx;
-	encoder_context *e_ctx;
-	window_context *w_ctx;
-	SDL_Thread *reader, *source_decoder, *encoder, *fov_decoder;
+	reader_context *rc;
+	decoder_context *src_dc, *fov_dc;
+	encoder_context *ec;
+	window_context *wc;
+	SDL_Thread *reader, *src_decoder, *encoder, *fov_decoder;
 	const int queue_capacity = 32;
 
 	if (argc != 2) {
@@ -122,37 +122,37 @@ int main(int argc, char **argv)
 	setup_ivx();
 #endif
 
-	video_paths = parse_lines(argv[1]);
-	w_ctx = window_init(screen_width, screen_height);
+	paths = parse_lines(argv[1]);
+	wc = window_init(screen_width, screen_height);
 
 
-	for (int i = 0; video_paths[i]; i++) {
+	for (int i = 0; paths[i]; i++) {
 
-		r_ctx = reader_init(video_paths[i], queue_capacity);
-		source_d_ctx = source_decoder_init(r_ctx, queue_capacity);
-		e_ctx = encoder_init(id, source_d_ctx, w_ctx);
-		fov_d_ctx = fov_decoder_init(e_ctx);
+		rc = reader_init(paths[i], queue_capacity);
+		src_dc = source_decoder_init(rc, queue_capacity);
+		ec = encoder_init(id, src_dc, wc);
+		fov_dc = fov_decoder_init(ec);
 
-		reader = SDL_CreateThread(reader_thread, "reader_thread", r_ctx);
-		source_decoder = SDL_CreateThread(decoder_thread, "source_decoder_thread", source_d_ctx);
-		encoder = SDL_CreateThread(encoder_thread, "encoder_thread", e_ctx);
-		fov_decoder = SDL_CreateThread(decoder_thread, "fov_decoder_thread", fov_d_ctx);
+		reader = SDL_CreateThread(reader_thread, "reader", rc);
+		src_decoder = SDL_CreateThread(decoder_thread, "src_decoder", src_dc);
+		encoder = SDL_CreateThread(encoder_thread, "encoder", ec);
+		fov_decoder = SDL_CreateThread(decoder_thread, "fov_decoder", fov_dc);
 
-		set_window_queues(w_ctx, fov_d_ctx->frame_queue, e_ctx->lag_queue);
-		set_window_timing(w_ctx, source_d_ctx->avctx->time_base);
-		event_loop(w_ctx);
+		set_window_queues(wc, fov_dc->frame_queue, ec->lag_queue);
+		set_window_timing(wc, src_dc->avctx->time_base);
+		event_loop(wc);
 
 		SDL_WaitThread(reader, NULL);
-		SDL_WaitThread(source_decoder, NULL);
+		SDL_WaitThread(src_decoder, NULL);
 		SDL_WaitThread(encoder, NULL);
 		SDL_WaitThread(fov_decoder, NULL);
 
-		decoder_free(&fov_d_ctx);
-		encoder_free(&e_ctx);
-		decoder_free(&source_d_ctx);
-		reader_free(&r_ctx);
+		decoder_free(&fov_dc);
+		encoder_free(&ec);
+		decoder_free(&src_dc);
+		reader_free(&rc);
 	}
 
-	free_lines(&video_paths);
+	free_lines(&paths);
 	return EXIT_SUCCESS;
 }

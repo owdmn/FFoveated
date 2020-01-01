@@ -99,7 +99,7 @@ void encoder_free(encoder_context **ec)
 	avcodec_free_context(&e->avctx);
 	av_dict_free(&e->options);
 	free(e);
-	*ec= NULL;
+	*ec = NULL;
 }
 
 void supply_frame(AVCodecContext *avctx, AVFrame *frame)
