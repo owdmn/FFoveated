@@ -51,7 +51,7 @@ static void set_codec_options(AVDictionary **opt, enc_id id)
  * @param queue_capacity output packet queue capacity
  * @return encoder_context with initialized fields and opened decoder
  */
-encoder_context *encoder_init(enc_id id, AVCodecContext *dec_avctx, window_context *w_ctx, Queue *frame_queue)
+encoder_context *encoder_init(enc_id id, decoder_context *dec_ctx , window_context *w_ctx)
 {
 	encoder_context *enc_ctx;
 	AVCodecContext *avctx;
@@ -82,15 +82,15 @@ encoder_context *encoder_init(enc_id id, AVCodecContext *dec_avctx, window_conte
 	if (!avctx)
 		pexit("avcodec_alloc_context3 failed");
 
-	avctx->time_base = dec_avctx->time_base;
+	avctx->time_base = dec_ctx->avctx->time_base;
 	avctx->pix_fmt = codec->pix_fmts[0]; //first supported pixel format
-	avctx->width = dec_avctx->width;
-	avctx->height = dec_avctx->height;
+	avctx->width = dec_ctx->avctx->width;
+	avctx->height = dec_ctx->avctx->height;
 
 	if (avcodec_open2(avctx, avctx->codec, &options) < 0)
 		pexit("avcodec_open2 failed");
 
-	enc_ctx->frame_queue = frame_queue;
+	enc_ctx->frame_queue = dec_ctx->frame_queue;
 	/* output queues have length 1 to enforce RT processing */
 	enc_ctx->packet_queue = queue_init(1);
 	enc_ctx->lag_queue = queue_init(1);
@@ -98,6 +98,7 @@ encoder_context *encoder_init(enc_id id, AVCodecContext *dec_avctx, window_conte
 	enc_ctx->avctx = avctx;
 	enc_ctx->options = options;
 	enc_ctx->w_ctx = w_ctx;
+	enc_ctx->id = id;
 
 	return enc_ctx;
 }

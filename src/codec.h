@@ -22,11 +22,20 @@
 #include <libavutil/time.h>
 #include "io.h"
 
+/**
+ * ids for supported encoders
+ */
+typedef enum {
+	LIBX264,
+	LIBX265,
+} enc_id;
+
 // Passed to decoder_thread through SDL_CreateThread
 typedef struct decoder_context {
 	Queue *packet_queue;
 	Queue *frame_queue;
 	AVCodecContext *avctx;
+	enc_id id;
 } decoder_context;
 
 // Passed  to encoder_thread through SDL_CreateThread
@@ -36,16 +45,9 @@ typedef struct encoder_context {
 	Queue *lag_queue; //timestamps to measure encoding-decoding-display lag
 	AVCodecContext *avctx;
 	AVDictionary *options;
-	window_context *w_ctx; //required for foveation...
+	window_context *w_ctx; //required for fake-foveation using the mouse pointer
+	enc_id id;
 } encoder_context;
-
-/**
- * ids for supported encoders
- */
-typedef enum {
-	LIBX264,
-	LIBX265,
-} enc_id;
 
 /**
  * Create and initialize a realtime (re)encoder context
@@ -54,12 +56,12 @@ typedef enum {
  * frames before futher frames can be added. Further buffering is unnecessary
  * in real-time applications.
  * Calls pexit in case of a failure
- * @param avctx av codec context of the previous decoder: dec_ctx->avctx
- * @param w_ctx window context to provide physical screen properties
- * @param frame_queue input frame queue
+ * @param id internal id of supported codecs
+ * @param dec_ctx context of the supplying decoder
+ * @param w_ctx window context, necessary für fake-gaze through the mouse pointer
  * @return encoder_context with initialized fields and opened decoder
  */
-encoder_context *encoder_init(enc_id id, AVCodecContext *avctx, window_context *w_ctx, Queue *frame_queue);
+encoder_context *encoder_init(enc_id id, decoder_context *dec_ctx, window_context *w_ctx);
 
 /**
  * Free the encoder context and associated data.

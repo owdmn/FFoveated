@@ -130,8 +130,8 @@ int main(int argc, char **argv)
 
 		r_ctx = reader_init(video_paths[i], queue_capacity);
 		source_d_ctx = source_decoder_init(r_ctx, queue_capacity);
-		e_ctx = encoder_init(id, source_d_ctx->avctx, w_ctx, source_d_ctx->frame_queue);
-		fov_d_ctx = fov_decoder_init(id, e_ctx->packet_queue);
+		e_ctx = encoder_init(id, source_d_ctx, w_ctx);
+		fov_d_ctx = fov_decoder_init(e_ctx);
 
 		reader = SDL_CreateThread(reader_thread, "reader_thread", r_ctx);
 		source_decoder = SDL_CreateThread(decoder_thread, "source_decoder_thread", source_d_ctx);
