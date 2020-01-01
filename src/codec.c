@@ -275,8 +275,8 @@ void supply_packet(AVCodecContext *avctx, AVPacket *packet)
 int decoder_thread(void *ptr)
 {
 	int ret;
-	decoder_context *dec_ctx = (decoder_context *) ptr;
-	AVCodecContext *avctx = dec_ctx->avctx;
+	decoder_context *dc = (decoder_context *) ptr;
+	AVCodecContext *avctx = dc->avctx;
 	AVFrame *frame;
 	AVPacket *packet;
 
@@ -288,12 +288,12 @@ int decoder_thread(void *ptr)
 		ret = avcodec_receive_frame(avctx, frame);
 		if (ret == 0) {
 			// valid frame - enqueue and allocate new buffer
-			queue_append(dec_ctx->frame_queue, frame);
+			queue_append(dc->frame_queue, frame);
 			frame = av_frame_alloc();
 			continue;
 		} else if (ret == AVERROR(EAGAIN)) {
 			//provide another packet to the decoder
-			packet = queue_extract(dec_ctx->packet_queue);
+			packet = queue_extract(dc->packet_queue);
 			supply_packet(avctx, packet);
 			av_packet_free(&packet);
 			continue;
@@ -307,7 +307,7 @@ int decoder_thread(void *ptr)
 	}
 
 	//enqueue flush packet in
-	queue_append(dec_ctx->frame_queue, NULL);
+	queue_append(dc->frame_queue, NULL);
 	avcodec_close(avctx);
 	return 0;
 }
