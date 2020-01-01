@@ -330,7 +330,7 @@ decoder_context *fov_decoder_init(Queue *packet_queue, enc_id id)
 	switch (id) {
 		case LIBX264:
         printf("looking for libx264\n");
-		codec = avcodec_find_decoder_by_name("libx264");
+		codec = avcodec_find_decoder_by_name("h264");
 		break;
 		case LIBX265:
 		codec = avcodec_find_decoder_by_name("hevc");
