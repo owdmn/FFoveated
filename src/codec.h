@@ -138,11 +138,10 @@ int decoder_thread(void *ptr);
  * The decoder context inherits the necessary fields from an encoder context.
  *
  * Calls pexit in case of a failure.
- * @param enc_id encoder id
- * @param queue_capacity output frame queue capacity.
+ * @param e_ctx foveated encoder context
  * @return decoder_context* with all members initialized.
  */
-decoder_context *fov_decoder_init(enc_id id, Queue *packet_queue);
+decoder_context *fov_decoder_init(encoder_context *e_ctx);
 
 /**
  * Free the decoder_context and associated data, set d_ctx to NULL.

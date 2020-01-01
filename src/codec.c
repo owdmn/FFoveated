@@ -320,25 +320,14 @@ int decoder_thread(void *ptr)
 	return 0;
 }
 
-decoder_context *fov_decoder_init(enc_id id, Queue *packet_queue)
+decoder_context *fov_decoder_init(encoder_context *enc_ctx)
 {
 	AVCodecContext *avctx;
 	AVCodec *codec;
 	decoder_context *d;
 	int ret;
 
-	switch (id) {
-		case LIBX264:
-        printf("looking for libx264\n");
-		codec = avcodec_find_decoder_by_name("h264");
-		break;
-		case LIBX265:
-		codec = avcodec_find_decoder_by_name("hevc");
-        printf("looking for libx265: %p \n", (void *)codec);
-		break;
-		default:
-		codec = NULL;
-	}
+	codec = avcodec_find_decoder(enc_ctx->avctx->codec->id);
 
 	if (!codec)
 		pexit("avcodec_find_decoder_by_name failed");
@@ -355,7 +344,7 @@ decoder_context *fov_decoder_init(enc_id id, Queue *packet_queue)
 	if (!d)
 		pexit("malloc failed");
 
-	d->packet_queue = packet_queue;
+	d->packet_queue = enc_ctx->packet_queue;
 	d->frame_queue = queue_init(1);
 	d->avctx = avctx;
 
