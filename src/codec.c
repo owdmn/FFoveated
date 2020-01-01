@@ -343,14 +343,14 @@ decoder_context *fov_decoder_init(encoder_context *ec)
 	return dc;
 }
 
-void decoder_free(decoder_context **d_ctx)
+void decoder_free(decoder_context **dc)
 {
 	decoder_context *d;
 
-	d = *d_ctx;
+	d = *dc;
 	avcodec_free_context(&d->avctx);
 	queue_free(d->frame_queue);
 	/* packet_queue is freed by reader_free! */
 	free(d);
-	d = NULL;
+	*dc = NULL;
 }
