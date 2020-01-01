@@ -17,6 +17,31 @@
 
 #include "codec.h"
 
+/**
+ * Set codec options for the given encoder id
+ * @param options AVDictionary to be set or altered
+ * @param id encoder id
+ */
+static void set_codec_options(AVDictionary **opt, enc_id id)
+{
+	switch (id) {
+		case LIBX264:
+		av_dict_set(opt, "preset", "ultrafast", 0);
+		av_dict_set(opt, "tune", "zerolatency", 0);
+		av_dict_set(opt, "aq-mode", "autovariance", 0);
+		av_dict_set(opt, "gop-size", "3", 0);
+		break;
+		case LIBX265:
+		av_dict_set(opt, "preset", "ultrafast", 0);
+		av_dict_set(opt, "tune", "zerolatency", 0);
+		av_dict_set(opt, "x265-params", "aq-mode=2", 0); //autovariance
+		av_dict_set(opt, "gop-size", "3", 0);
+		break;
+		default:
+		pexit("trying to set options for unsupported codec");
+	}
+}
+
 
 /**
  * Create and initialize an encoder context
@@ -39,17 +64,11 @@ encoder_context *encoder_init(enc_id id, AVCodecContext *dec_avctx, window_conte
 
 	switch (id) {
 		case LIBX264:
-		av_dict_set(&options, "preset", "ultrafast", 0);
-		av_dict_set(&options, "tune", "zerolatency", 0);
-		av_dict_set(&options, "aq-mode", "autovariance", 0);
-		av_dict_set(&options, "gop-size", "3", 0);
+		set_codec_options(&options, LIBX264);
 		codec = avcodec_find_encoder_by_name("libx264");
 		break;
 		case LIBX265:
-		av_dict_set(&options, "preset", "ultrafast", 0);
-		av_dict_set(&options, "tune", "zerolatency", 0);
-		av_dict_set(&options, "x265-params", "aq-mode=2", 0); //autovariance
-		av_dict_set(&options, "gop-size", "3", 0);
+		set_codec_options(&options, LIBX265);
 		codec = avcodec_find_encoder_by_name("libx265");
 		break;
 		default:
