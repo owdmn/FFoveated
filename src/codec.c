@@ -37,14 +37,14 @@ static void set_codec_options(AVDictionary **opt, enc_id id)
 	}
 }
 
-encoder_context *encoder_init(enc_id id, decoder_context *dc, window_context *wc)
+enc_ctx *encoder_init(enc_id id, dec_ctx *dc, win_ctx *wc)
 {
-	encoder_context *ec;
+	enc_ctx *ec;
 	AVCodecContext *avctx;
 	AVCodec *codec;
 	AVDictionary *options = NULL;
 
-	ec = malloc(sizeof(encoder_context));
+	ec = malloc(sizeof(enc_ctx));
 	if (!ec)
 		pexit("malloc failed");
 
@@ -76,33 +76,33 @@ encoder_context *encoder_init(enc_id id, decoder_context *dc, window_context *wc
 	if (avcodec_open2(avctx, avctx->codec, &options) < 0)
 		pexit("avcodec_open2 failed");
 
-	ec->frame_queue = dc->frame_queue;
+	ec->frames = dc->frames;
 	/* output queues have length 1 to enforce RT processing */
-	ec->packet_queue = queue_init(1);
-	ec->lag_queue = queue_init(1);
+	ec->packets = queue_init(1);
+	ec->timestamps = queue_init(1);
 
 	ec->avctx = avctx;
 	ec->options = options;
-	ec->w_ctx = wc;
+	ec->wc = wc;
 	ec->id = id;
 
 	return ec;
 }
 
-void encoder_free(encoder_context **ec)
+void encoder_free(enc_ctx **ec)
 {
-	encoder_context *e;
+	enc_ctx *e;
 
 	e = *ec;
-	queue_free(e->packet_queue);
-	queue_free(e->lag_queue);
+	queue_free(e->packets);
+	queue_free(e->timestamps);
 	avcodec_free_context(&e->avctx);
 	av_dict_free(&e->options);
 	free(e);
 	*ec = NULL;
 }
 
-void supply_frame(AVCodecContext *avctx, AVFrame *frame)
+static void supply_frame(AVCodecContext *avctx, AVFrame *frame)
 {
 	int ret;
 
@@ -119,28 +119,28 @@ void supply_frame(AVCodecContext *avctx, AVFrame *frame)
 
 int encoder_thread(void *ptr)
 {
-	encoder_context *ec = (encoder_context *) ptr;
+	enc_ctx *ec = (enc_ctx *) ptr;
 	AVFrame *frame;
-	AVPacket *packet;
+	AVPacket *pkt;
 	AVFrameSideData *sd;
 	float *descr;
 	size_t descr_size = 4*sizeof(float);
 	int ret;
 	int64_t *timestamp;
 
-	packet = av_packet_alloc(); //NULL check in loop.
+	pkt = av_packet_alloc(); //NULL check in loop.
 
 	for (;;) {
-		if (!packet)
+		if (!pkt)
 			pexit("av_packet_alloc failed");
 
-		ret = avcodec_receive_packet(ec->avctx, packet);
+		ret = avcodec_receive_packet(ec->avctx, pkt);
 		if (ret == 0) {
-			queue_append(ec->packet_queue, packet);
-			packet = av_packet_alloc();
+			queue_append(ec->packets, pkt);
+			pkt = av_packet_alloc();
 			continue;
 		} else if (ret == AVERROR(EAGAIN)) {
-			frame = queue_extract(ec->frame_queue);
+			frame = queue_extract(ec->frames);
 
 			if (!frame)
 				break;
@@ -148,7 +148,7 @@ int encoder_thread(void *ptr)
 			sd = av_frame_new_side_data(frame, AV_FRAME_DATA_FOVEATION_DESCRIPTOR, descr_size);
 			if (!sd)
 				pexit("side data allocation failed");
-			descr = foveation_descriptor(ec->w_ctx);
+			descr = foveation_descriptor(ec->wc);
 			sd->data = (uint8_t *) descr;
 
 			frame->pict_type = 0; //keep undefined to prevent warnings
@@ -160,7 +160,7 @@ int encoder_thread(void *ptr)
 				perror("malloc failed");
 			*timestamp = av_gettime_relative();
 
-			queue_append(ec->lag_queue, timestamp);
+			queue_append(ec->timestamps, timestamp);
 
 		} else if (ret == AVERROR_EOF) {
 			break;
@@ -169,48 +169,47 @@ int encoder_thread(void *ptr)
 		}
 	}
 
-	queue_append(ec->packet_queue, NULL);
+	queue_append(ec->packets, NULL);
 	avcodec_close(ec->avctx);
 	avcodec_free_context(&ec->avctx);
 	return 0;
 }
 
-float *foveation_descriptor(window_context *wc)
+float *foveation_descriptor(win_ctx *wc)
 {
-	float *f;
+	float *fd;
 	int width, height;
 
 	SDL_GetWindowSize(wc->window, &width, &height);
-
-	f = malloc(4*sizeof(float));
-	if (!f)
+	fd = malloc(4*sizeof(float));
+	if (!fd)
 		pexit("malloc failed");
 
 	#ifdef ET
 	// eye-tracking
-	f[0] =
-	f[1] =
-	f[2] =
-	f[3] =
+	fd[0] =
+	fd[1] =
+	fd[2] =
+	fd[3] =
 
 	#else
 	// fake mouse motion dummy values
 	SDL_GetMouseState(&wc->mouse_x, &wc->mouse_y);
-	f[0] = (float) wc->mouse_x / width;
-	f[1] = (float) wc->mouse_y / height;
-	f[2] = 0.3;
-	f[3] = 20;
+	fd[0] = (float) wc->mouse_x / width;
+	fd[1] = (float) wc->mouse_y / height;
+	fd[2] = 0.3;
+	fd[3] = 20;
 	#endif
-	return f;
+	return fd;
 }
 
-decoder_context *source_decoder_init(reader_context *rc, int queue_capacity)
+dec_ctx *source_decoder_init(rdr_ctx *rc, int queue_capacity)
 {
 	AVCodecContext *avctx;
-	decoder_context *dc;
+	dec_ctx *dc;
 	int ret;
 	int index = rc->stream_index;
-	AVStream *stream = rc->format_ctx->streams[index];
+	AVStream *stream = rc->fctx->streams[index];
 	AVCodec *codec;
 
 	avctx = avcodec_alloc_context3(NULL);
@@ -233,18 +232,18 @@ decoder_context *source_decoder_init(reader_context *rc, int queue_capacity)
 	if (ret < 0)
 		pexit("avcodec_open2 failed");
 
-	dc = malloc(sizeof(decoder_context));
+	dc = malloc(sizeof(dec_ctx));
 	if (!dc)
 		pexit("malloc failed");
 
-	dc->packet_queue = rc->packet_queue;
-	dc->frame_queue = queue_init(queue_capacity);
+	dc->packets = rc->packets;
+	dc->frames = queue_init(queue_capacity);
 	dc->avctx = avctx;
 
 	return dc;
 }
 
-void supply_packet(AVCodecContext *avctx, AVPacket *packet)
+static void supply_packet(AVCodecContext *avctx, AVPacket *packet)
 {
 	int ret;
 
@@ -262,7 +261,7 @@ void supply_packet(AVCodecContext *avctx, AVPacket *packet)
 int decoder_thread(void *ptr)
 {
 	int ret;
-	decoder_context *dc = (decoder_context *) ptr;
+	dec_ctx *dc = (dec_ctx *) ptr;
 	AVCodecContext *avctx = dc->avctx;
 	AVFrame *frame;
 	AVPacket *packet;
@@ -275,12 +274,12 @@ int decoder_thread(void *ptr)
 		ret = avcodec_receive_frame(avctx, frame);
 		if (ret == 0) {
 			// valid frame - enqueue and allocate new buffer
-			queue_append(dc->frame_queue, frame);
+			queue_append(dc->frames, frame);
 			frame = av_frame_alloc();
 			continue;
 		} else if (ret == AVERROR(EAGAIN)) {
 			//provide another packet to the decoder
-			packet = queue_extract(dc->packet_queue);
+			packet = queue_extract(dc->packets);
 			supply_packet(avctx, packet);
 			av_packet_free(&packet);
 			continue;
@@ -294,16 +293,16 @@ int decoder_thread(void *ptr)
 	}
 
 	//enqueue flush packet in
-	queue_append(dc->frame_queue, NULL);
+	queue_append(dc->frames, NULL);
 	avcodec_close(avctx);
 	return 0;
 }
 
-decoder_context *fov_decoder_init(encoder_context *ec)
+dec_ctx *fov_decoder_init(enc_ctx *ec)
 {
 	AVCodecContext *avctx;
 	AVCodec *codec;
-	decoder_context *dc;
+	dec_ctx *dc;
 	int ret;
 
 	codec = avcodec_find_decoder(ec->avctx->codec->id);
@@ -319,24 +318,24 @@ decoder_context *fov_decoder_init(encoder_context *ec)
 	if (ret < 0)
 		pexit("avcodec_open2 failed");
 
-	dc = malloc(sizeof(decoder_context));
+	dc = malloc(sizeof(dec_ctx));
 	if (!dc)
 		pexit("malloc failed");
 
-	dc->packet_queue = ec->packet_queue;
-	dc->frame_queue = queue_init(1);
+	dc->packets = ec->packets;
+	dc->frames = queue_init(1);
 	dc->avctx = avctx;
 
 	return dc;
 }
 
-void decoder_free(decoder_context **dc)
+void decoder_free(dec_ctx **dc)
 {
-	decoder_context *d;
+	dec_ctx *d;
 
 	d = *dc;
 	avcodec_free_context(&d->avctx);
-	queue_free(d->frame_queue);
+	queue_free(d->frames);
 	/* packet_queue is freed by reader_free! */
 	free(d);
 	*dc = NULL;

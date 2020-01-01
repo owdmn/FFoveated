@@ -25,22 +25,6 @@
 #include <libavutil/time.h>
 
 /**
- * Print formatted error message referencing the affeted source file,
- * line and the errno status through perror (3), then exit with EXIT_FAILURE.
- * Likely used through the pexit macro for comfort.
- *
- * @param msg error message
- * @param file usually the __FILE__ macro
- * @param line usually the __LINE__ macro
- */
-void pexit_(const char *msg, const char *file, const int line);
-
-/**
- * Convenience macro to report runtime errors with debug information.
- */
-#define pexit(s) pexit_(s, __FILE__, __LINE__)
-
-/**
  * Container for a generic queue and associated metadata.
  *
  * Signalling is implemented by having data[rear] always point to an
@@ -55,6 +39,46 @@ typedef struct Queue {
 	SDL_cond *full;
 	SDL_cond *empty;
 } Queue;
+
+// Passed to reader_thread through SDL_CreateThread
+typedef struct rdr_ctx {
+	char *filename;
+	int stream_index;
+	Queue *packets;
+	AVFormatContext *fctx;
+} rdr_ctx;
+
+// Passed to window_thread through SDL_CreateThread
+typedef struct win_ctx {
+	Queue *frames;
+	Queue *timestamps;
+	SDL_Window *window;
+	SDL_Texture *texture;
+	int width;
+	int height;
+	int mouse_x;
+	int mouse_y;
+	float screen_width;
+	float screen_height;
+	int64_t time_start;
+	AVRational time_base;
+} win_ctx;
+
+/**
+ * Print formatted error message referencing the affeted source file,
+ * line and the errno status through perror (3), then exit with EXIT_FAILURE.
+ * Likely used through the pexit macro for comfort.
+ *
+ * @param msg error message
+ * @param file usually the __FILE__ macro
+ * @param line usually the __LINE__ macro
+ */
+void pexit_(const char *msg, const char *file, const int line);
+
+/**
+ * Convenience macro to report runtime errors with debug information.
+ */
+#define pexit(s) pexit_(s, __FILE__, __LINE__)
 
 /**
  * Create and initialize a Queue structure.
@@ -124,13 +148,6 @@ char **parse_lines(const char *pathname);
  */
 void free_lines(char ***lines);
 
-// Passed to reader_thread through SDL_CreateThread
-typedef struct reader_context {
-	char *filename;
-	int stream_index;
-	Queue *packet_queue;
-	AVFormatContext *format_ctx;
-} reader_context;
 
 /**
  * Read a video file and put the contained AVPackets in a queue.
@@ -148,29 +165,13 @@ typedef struct reader_context {
  */
 int reader_thread(void *ptr);
 
-// Passed to window_thread through SDL_CreateThread
-typedef struct window_context {
-	Queue *frame_queue;
-	Queue *lag_queue;
-	SDL_Window *window;
-	SDL_Texture *texture;
-	int width;
-	int height;
-	int mouse_x;
-	int mouse_y;
-	float screen_width;
-	float screen_height;
-	int64_t time_start;
-	AVRational time_base;
-} window_context;
-
 /**
  * Set the frame queue for the given window context to q
  *
  * @param q frame queue
  * @param w_ctx to be updated
  */
-void set_window_queues(window_context *w_ctx, Queue *frames, Queue *lags);
+void set_window_queues(win_ctx *wc, Queue *frames, Queue *timestamps);
 
 /**
  * Create and initialize a reader context.
@@ -183,14 +184,14 @@ void set_window_queues(window_context *w_ctx, Queue *frames, Queue *lags);
  * @param filename the file the reader thread will try to open
  * @return reader_context* to a heap-allocated instance.
  */
-reader_context *reader_init(char *filename, int queue_capacity);
+rdr_ctx *reader_init(char *filename, int queue_capacity);
 
 /**
  * Free the reader_context and all allocated resources,
  * set r-ctx to NULL.
  * @param r_ctx reader context to be freed.
  */
-void reader_free(reader_context **r_ctx);
+void reader_free(rdr_ctx **rc);
 
 /**
  * Create and initialize a window_context.
@@ -204,7 +205,7 @@ void reader_free(reader_context **r_ctx);
  * @param screen_height physical screen height in mm
  * @return window_context with initialized defaults
  */
-window_context *window_init(float screen_width, float screen_height);
+win_ctx *window_init(float screen_width, float screen_height);
 
 /**
  * (Re)allocate a the texture member of a window_context
@@ -217,8 +218,7 @@ window_context *window_init(float screen_width, float screen_height);
  * @param w_ctx window context whose texture member is being updated.
  * @param frame frame to be rendered to the texture.
  */
-void realloc_texture(window_context *w_ctx, AVFrame *frame);
-
+void realloc_texture(win_ctx *wc, AVFrame *frame);
 
 /**
  * Calculate a centered rectangle within a window with a suitable aspect ratio.
@@ -230,7 +230,7 @@ void realloc_texture(window_context *w_ctx, AVFrame *frame);
  * @param w_ctx window_context, read width and height of the window
  * @param f AVFrame to be displayed
  */
-void center_rect(SDL_Rect *rect, window_context *w_ctx, AVFrame *f);
+void center_rect(SDL_Rect *rect, win_ctx *w_ctx, AVFrame *f);
 
 /**
  * Display the next frame in the queue to the window.
@@ -241,7 +241,7 @@ void center_rect(SDL_Rect *rect, window_context *w_ctx, AVFrame *f);
  * @param w_ctx supplying the window and frame_queue
  * @return 0 on success, 1 if the frame_queue is drained (returned NULL).
  */
-int frame_refresh(window_context *w_ctx);
+int frame_refresh(win_ctx *w_ctx);
 
 /**
  * Set the time_base for the presentation window context.
@@ -250,4 +250,4 @@ int frame_refresh(window_context *w_ctx);
  * @param w_ctx the window context to be updated
  * @param d_ctx the cont ext of the original decoder
  */
-void set_window_timing(window_context *w_ctx, AVRational time_base);
+void set_window_timing(win_ctx *w_ctx, AVRational time_base);

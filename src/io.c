@@ -159,7 +159,7 @@ void free_lines(char ***lines)
 
 int reader_thread(void *ptr)
 {
-	reader_context *r_ctx = (reader_context *) ptr;
+	rdr_ctx *rc = (rdr_ctx *) ptr;
 	int ret;
 
 	AVPacket *pkt;
@@ -169,53 +169,53 @@ int reader_thread(void *ptr)
 		if (!pkt)
 			pexit("malloc failed");
 
-		ret = av_read_frame(r_ctx->format_ctx, pkt);
+		ret = av_read_frame(rc->fctx, pkt);
 		if (ret == AVERROR_EOF)
 			break;
 		else if (ret < 0)
 			pexit("av_read_frame failed");
 
 		/* discard invalid buffers and non-video packages */
-		if (pkt->buf == NULL || pkt->stream_index != r_ctx->stream_index) {
+		if (pkt->buf == NULL || pkt->stream_index != rc->stream_index) {
 			av_packet_free(&pkt);
 			continue;
 		}
-		queue_append(r_ctx->packet_queue, pkt);
+		queue_append(rc->packets, pkt);
 	}
 	/* finally enqueue NULL to enter draining mode */
-	queue_append(r_ctx->packet_queue, NULL);
-	avformat_close_input(&r_ctx->format_ctx); //FIXME: Is it reasonable to call this here already?
+	queue_append(rc->packets, NULL);
+	avformat_close_input(&rc->fctx);
 	return 0;
 }
 
-reader_context *reader_init(char *filename, int queue_capacity)
+rdr_ctx *reader_init(char *filename, int queue_capacity)
 {
-	reader_context *r;
+	rdr_ctx *rc;
 	int ret;
 	int stream_index;
-	AVFormatContext *format_ctx;
-	Queue *packet_queue;
+	AVFormatContext *fctx;
+	Queue *packets;
 	char *fn_cpy;
 
 	// preparations: allocate, open and set required datastructures
-	format_ctx = avformat_alloc_context();
-	if (!format_ctx)
+	fctx = avformat_alloc_context();
+	if (!fctx)
 		pexit("avformat_alloc_context failed");
 
-	ret = avformat_open_input(&format_ctx, filename, NULL, NULL);
+	ret = avformat_open_input(&fctx, filename, NULL, NULL);
 	if (ret < 0)
 		pexit("avformat_open_input failed");
 
-	stream_index = av_find_best_stream(format_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
+	stream_index = av_find_best_stream(fctx, AVMEDIA_TYPE_VIDEO, -1, -1, NULL, 0);
 	if (stream_index == AVERROR_STREAM_NOT_FOUND || stream_index == AVERROR_DECODER_NOT_FOUND)
 		pexit("video stream or decoder not found");
 
-	format_ctx->streams[stream_index]->discard = AVDISCARD_DEFAULT;
-	packet_queue = queue_init(queue_capacity);
+	fctx->streams[stream_index]->discard = AVDISCARD_DEFAULT;
+	packets = queue_init(queue_capacity);
 
 	// allocate and set the context
-	r = malloc(sizeof(reader_context));
-	if (!r)
+	rc = malloc(sizeof(rdr_ctx));
+	if (!rc)
 		pexit("malloc failed");
 
 	fn_cpy = malloc(strlen(filename));
@@ -223,29 +223,29 @@ reader_context *reader_init(char *filename, int queue_capacity)
 		pexit("malloc failed");
 	strncpy(fn_cpy, filename, strlen(filename));
 
-	r->format_ctx = format_ctx;
-	r->stream_index = stream_index;
-	r->filename = fn_cpy;
-	r->packet_queue = packet_queue;
+	rc->fctx = fctx;
+	rc->stream_index = stream_index;
+	rc->filename = fn_cpy;
+	rc->packets = packets;
 
-	return r;
+	return rc;
 }
 
-void reader_free(reader_context **r_ctx)
+void reader_free(rdr_ctx **rc)
 {
-	reader_context *r;
+	rdr_ctx *r;
 
-	r = *r_ctx;
+	r = *rc;
 	free(r->filename);
-	queue_free(r->packet_queue);
-	avformat_free_context(r->format_ctx);
-	free(*r_ctx);
-	*r_ctx = NULL;
+	queue_free(r->packets);
+	avformat_free_context(r->fctx);
+	free(*rc);
+	*rc = NULL;
 }
 
-window_context *window_init(float screen_width, float screen_height)
+win_ctx *window_init(float screen_width, float screen_height)
 {
-	window_context *w_ctx;
+	win_ctx *wc;
 	SDL_Window *window;
 	Uint32 flags;
 	SDL_Renderer *renderer;
@@ -270,19 +270,19 @@ window_context *window_init(float screen_width, float screen_height)
 	if (!renderer)
 		pexit(SDL_GetError());
 
-	w_ctx = malloc(sizeof(window_context));
-	if (!w_ctx)
+	wc = malloc(sizeof(win_ctx));
+	if (!wc)
 		pexit("malloc failed");
-	w_ctx->window = window;
-	w_ctx->width = dm.w;
-	w_ctx->height = dm.h;
-	w_ctx->texture = NULL;
-	w_ctx->screen_width = screen_width;
-	w_ctx->screen_height = screen_height;
-	return w_ctx;
+	wc->window = window;
+	wc->width = dm.w;
+	wc->height = dm.h;
+	wc->texture = NULL;
+	wc->screen_width = screen_width;
+	wc->screen_height = screen_height;
+	return wc;
 }
 
-void realloc_texture(window_context *w_ctx, AVFrame *frame)
+void realloc_texture(win_ctx *wc, AVFrame *frame)
 {
 	int ret;
 	int old_width;
@@ -290,9 +290,9 @@ void realloc_texture(window_context *w_ctx, AVFrame *frame)
 	int old_access;
 	Uint32 old_format;
 
-	if (w_ctx->texture) {
+	if (wc->texture) {
 		/* texture already exists - check if we need to modify it */
-		ret = SDL_QueryTexture(w_ctx->texture, &old_format, &old_access,
+		ret = SDL_QueryTexture(wc->texture, &old_format, &old_access,
 											   &old_width, &old_height);
 		if (ret < 0)
 			pexit("SDL_QueryTexture failed");
@@ -300,40 +300,40 @@ void realloc_texture(window_context *w_ctx, AVFrame *frame)
 		/* if the specs agree, don't change it, otherwise detroy it */
 		if (frame->width == old_width && frame->height == old_height)
 			return;
-		SDL_DestroyTexture(w_ctx->texture);
+		SDL_DestroyTexture(wc->texture);
 	}
 
-	w_ctx->texture = SDL_CreateTexture(SDL_GetRenderer(w_ctx->window),
+	wc->texture = SDL_CreateTexture(SDL_GetRenderer(wc->window),
 										   SDL_PIXELFORMAT_YV12,
 										   SDL_TEXTUREACCESS_TARGET,
 										   frame->width, frame->height);
-	if (!w_ctx->texture)
+	if (!wc->texture)
 		pexit("SDL_CreateTexture failed");
 }
 
-void center_rect(SDL_Rect *rect, window_context *w_ctx, AVFrame *f)
+void center_rect(SDL_Rect *rect, win_ctx *wc, AVFrame *f)
 {
 	int width, height, x, y;
 	AVRational aspect_ratio = av_make_q(f->width, f->height);
 
 	// check if the frame fully fits into the window
-	if (w_ctx->height >= f->height && w_ctx->width >= f->width) {
-		x = (w_ctx->width - f->width) / 2;
-		y = (w_ctx->height - f->height) / 2;
+	if (wc->height >= f->height && wc->width >= f->width) {
+		x = (wc->width - f->width) / 2;
+		y = (wc->height - f->height) / 2;
 		width = f->width;
 		height = f->height;
 	} else { //frame does not fit completely, do a fit
 		// fix height to window, adapt width according to frame
-		height = w_ctx->height;
+		height = wc->height;
 		width = av_rescale(height, aspect_ratio.num, aspect_ratio.den);
 		// if that does not fit, fix width to window, adapt height
-		if (width > w_ctx->width) {
-			width = w_ctx->width;
+		if (width > wc->width) {
+			width = wc->width;
 			height = av_rescale(width, aspect_ratio.den, aspect_ratio.num);
 		}
 		// margins for black bars if aspect ratio does not fit
-		x = (w_ctx->width - width) / 2;
-		y = (w_ctx->height - height) / 2;
+		x = (wc->width - width) / 2;
+		y = (wc->height - height) / 2;
 	}
 
 	rect->x = x; //left
@@ -342,10 +342,10 @@ void center_rect(SDL_Rect *rect, window_context *w_ctx, AVFrame *f)
 	rect->h = height;
 }
 
-int frame_refresh(window_context *w_ctx)
+int frame_refresh(win_ctx *wc)
 {
 	AVFrame *frame;
-	SDL_Renderer *r = SDL_GetRenderer(w_ctx->window);
+	SDL_Renderer *r = SDL_GetRenderer(wc->window);
 	SDL_Rect rect;
 	int64_t upts; // presentation time in micro seconds
 	int64_t uremaining; //remaining time in micro seconds
@@ -357,33 +357,33 @@ int frame_refresh(window_context *w_ctx)
 	SDL_SetRenderDrawColor(r, 0, 0, 0, 255);
 	SDL_RenderClear(r);
 
-	frame = queue_extract(w_ctx->frame_queue);
+	frame = queue_extract(wc->frames);
 	if (!frame)
 		return 1;
 
-	realloc_texture(w_ctx, frame);
-	SDL_UpdateYUVTexture(w_ctx->texture, NULL, frame->data[0], frame->linesize[0],
+	realloc_texture(wc, frame);
+	SDL_UpdateYUVTexture(wc->texture, NULL, frame->data[0], frame->linesize[0],
 									frame->data[1], frame->linesize[1],
 									frame->data[2], frame->linesize[2]);
 
-	center_rect(&rect, w_ctx, frame);
-	SDL_RenderCopy(r, w_ctx->texture, NULL, &rect);
+	center_rect(&rect, wc, frame);
+	SDL_RenderCopy(r, wc->texture, NULL, &rect);
 
 	//add an initial delay to avoid lags when upts == 0
-	if (w_ctx->time_start == -1)
-		w_ctx->time_start = av_gettime_relative() + 1000;
+	if (wc->time_start == -1)
+		wc->time_start = av_gettime_relative() + 1000;
 
 	//XXX: why is the factor 2 here necessary? Can't find this in the docs, but it works consistently...
-	upts = (2 * 1000000 * frame->pts * w_ctx->time_base.num) / w_ctx->time_base.den;
-	uremaining = w_ctx->time_start + upts - av_gettime_relative();
+	upts = (2 * 1000000 * frame->pts * wc->time_base.num) / wc->time_base.den;
+	uremaining = wc->time_start + upts - av_gettime_relative();
 
-	encoder_timestamp = queue_extract(w_ctx->lag_queue);
-	free(encoder_timestamp);
+	encoder_timestamp = queue_extract(wc->timestamps);
 	#ifdef DEBUG
 	delay = (av_gettime_relative() - *encoder_timestamp) / 1000000;
 	fprintf(stdout, "remaining: %ld upts: %ld, frame->pts %ld, num %d, den %d, time %ld, delay %ld\n",
-	uremaining, upts, frame->pts, w_ctx->time_base.num, w_ctx->time_base.den, av_gettime_relative(), delay);
+	uremaining, upts, frame->pts, wc->time_base.num, wc->time_base.den, av_gettime_relative(), delay);
 	#endif
+	free(encoder_timestamp);
 
 	if (uremaining > 0)
 		av_usleep(uremaining);
@@ -395,14 +395,14 @@ int frame_refresh(window_context *w_ctx)
 	return 0;
 }
 
-void set_window_queues(window_context *w_ctx, Queue *frames, Queue *lags)
+void set_window_queues(win_ctx *wc, Queue *frames, Queue *timestamps)
 {
-	w_ctx->frame_queue = frames;
-	w_ctx->lag_queue = lags;
+	wc->frames = frames;
+	wc->timestamps = timestamps;
 }
 
-void set_window_timing(window_context *w_ctx, AVRational time_base)
+void set_window_timing(win_ctx *wc, AVRational time_base)
 {
-	w_ctx->time_base = time_base;
-	w_ctx->time_start = -1;
+	wc->time_base = time_base;
+	wc->time_start = -1;
 }

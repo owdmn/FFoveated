@@ -15,7 +15,6 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #pragma once
 
 #include <libavformat/avformat.h>
@@ -28,26 +27,27 @@
 typedef enum {
 	LIBX264,
 	LIBX265,
+	LIBVPX,
 } enc_id;
 
 // Passed to decoder_thread through SDL_CreateThread
-typedef struct decoder_context {
-	Queue *packet_queue;
-	Queue *frame_queue;
+typedef struct dec_ctx {
+	Queue *packets; //input
+	Queue *frames;  //output
 	AVCodecContext *avctx;
 	enc_id id;
-} decoder_context;
+} dec_ctx;
 
 // Passed  to encoder_thread through SDL_CreateThread
-typedef struct encoder_context {
-	Queue *frame_queue;
-	Queue *packet_queue;
-	Queue *lag_queue; //timestamps to measure encoding-decoding-display lag
+typedef struct enc_ctx {
+	Queue *packets; //output
+	Queue *frames;  //input
+	Queue *timestamps; //timestamps to measure encoding-decoding-display lag
 	AVCodecContext *avctx;
 	AVDictionary *options;
-	window_context *w_ctx; //required for fake-foveation using the mouse pointer
+	win_ctx *wc; //required for fake-foveation using the mouse pointer
 	enc_id id;
-} encoder_context;
+} enc_ctx;
 
 /**
  * Create and initialize a realtime (re)encoder context
@@ -61,7 +61,7 @@ typedef struct encoder_context {
  * @param w_ctx window context, necessary für fake-gaze through the mouse pointer
  * @return encoder_context with initialized fields and opened decoder
  */
-encoder_context *encoder_init(enc_id id, decoder_context *dec_ctx, window_context *w_ctx);
+enc_ctx *encoder_init(enc_id id, dec_ctx *dc, win_ctx *wc);
 
 /**
  * Free the encoder context and associated data.
@@ -70,16 +70,7 @@ encoder_context *encoder_init(enc_id id, decoder_context *dec_ctx, window_contex
  * and window_free funcions.
  * @param e_ctx encoder_context to be freed.
  */
-void encoder_free(encoder_context **e_ctx);
-
-/**
- * Supply the given codec with a frame, handle errors appropriately.
- *
- * Calls pexit in dase of a failure.
- * @param avctx context of the codec being supplied
- * @param frame the frame to be supplied
- */
-void supply_frame(AVCodecContext *avctx, AVFrame *frame);
+void encoder_free(enc_ctx **ec);
 
 /**
  * Encode AVFrames and put the compressed AVPacktes in a queue
@@ -99,7 +90,7 @@ int encoder_thread(void *ptr);
  * @param w_ctx window context
  * @return float* 4-tuple: x and y coordinate, standarddeviation and offset
  */
-float *foveation_descriptor(window_context *w_ctx);
+float *foveation_descriptor(win_ctx *wc);
 /**
  * Create and initialize a decoder context.
  *
@@ -111,16 +102,7 @@ float *foveation_descriptor(window_context *w_ctx);
  * @param queue_capacity output frame queue capacity.
  * @return decoder_context* with all members initialized.
  */
-decoder_context *source_decoder_init(reader_context *r_ctx, int queue_capacity);
-
-/**
- * Send a packet to the decoder, check the return value for errors.
- *
- * Calls pexit in case of a failure
- * @param avctx
- * @param packet
- */
-void supply_packet(AVCodecContext *avctx, AVPacket *packet);
+dec_ctx *source_decoder_init(rdr_ctx *rc, int queue_capacity);
 
 /**
  * Decode AVPackets and put the uncompressed AVFrames in a queue.
@@ -143,7 +125,7 @@ int decoder_thread(void *ptr);
  * @param e_ctx foveated encoder context
  * @return decoder_context* with all members initialized.
  */
-decoder_context *fov_decoder_init(encoder_context *e_ctx);
+dec_ctx *fov_decoder_init(enc_ctx *ec);
 
 /**
  * Free the decoder_context and associated data, set d_ctx to NULL.
@@ -153,4 +135,4 @@ decoder_context *fov_decoder_init(encoder_context *e_ctx);
  * Finally, set d_ctx to NULL.
  * @param d_ctx decoder context to be freed.
  */
-void decoder_free(decoder_context **d_ctx);
+void decoder_free(dec_ctx **dc);

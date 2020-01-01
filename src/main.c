@@ -48,7 +48,7 @@ void display_usage(char *progname)
  * Calls pexit in case of a failure.
  * @param w_ctx window_context to which rendering and event handling applies.
  */
-void event_loop(window_context *wc)
+void event_loop(win_ctx *wc)
 {
 	SDL_Event event;
 	int queue_drained = 0;
@@ -98,10 +98,10 @@ int main(int argc, char **argv)
 	char **paths;
 	float screen_width, screen_height; //physical display dimensions in mm
 	enc_id id;
-	reader_context *rc;
-	decoder_context *src_dc, *fov_dc;
-	encoder_context *ec;
-	window_context *wc;
+	rdr_ctx *rc;
+	dec_ctx *src_dc, *fov_dc;
+	enc_ctx *ec;
+	win_ctx *wc;
 	SDL_Thread *reader, *src_decoder, *encoder, *fov_decoder;
 	const int queue_capacity = 32;
 
@@ -114,6 +114,7 @@ int main(int argc, char **argv)
 	screen_width = 345;
 	screen_height = 194;
 	id = LIBX264;
+	id = LIBX265;
 
 	signal(SIGTERM, exit);
 	signal(SIGINT, exit);
@@ -138,7 +139,7 @@ int main(int argc, char **argv)
 		encoder = SDL_CreateThread(encoder_thread, "encoder", ec);
 		fov_decoder = SDL_CreateThread(decoder_thread, "fov_decoder", fov_dc);
 
-		set_window_queues(wc, fov_dc->frame_queue, ec->lag_queue);
+		set_window_queues(wc, fov_dc->frames, ec->timestamps);
 		set_window_timing(wc, src_dc->avctx->time_base);
 		event_loop(wc);
 
