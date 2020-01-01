@@ -150,7 +150,8 @@ char **parse_lines(const char *pathname)
 void free_lines(char ***lines)
 {
 	char **c;
-	for(c=*lines; *c; c++)
+
+	for (c = *lines; *c; c++)
 		free(*c);
 	free(*lines);
 	*lines = NULL;

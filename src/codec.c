@@ -25,23 +25,22 @@
 static void set_codec_options(AVDictionary **opt, enc_id id)
 {
 	switch (id) {
-		case LIBX264:
+	case LIBX264:
 		av_dict_set(opt, "preset", "ultrafast", 0);
 		av_dict_set(opt, "tune", "zerolatency", 0);
 		av_dict_set(opt, "aq-mode", "autovariance", 0);
 		av_dict_set(opt, "gop-size", "3", 0);
 		break;
-		case LIBX265:
+	case LIBX265:
 		av_dict_set(opt, "preset", "ultrafast", 0);
 		av_dict_set(opt, "tune", "zerolatency", 0);
 		av_dict_set(opt, "x265-params", "aq-mode=2", 0); //autovariance
 		av_dict_set(opt, "gop-size", "3", 0);
 		break;
-		default:
+	default:
 		pexit("trying to set options for unsupported codec");
 	}
 }
-
 
 /**
  * Create and initialize an encoder context
@@ -51,27 +50,27 @@ static void set_codec_options(AVDictionary **opt, enc_id id)
  * @param queue_capacity output packet queue capacity
  * @return encoder_context with initialized fields and opened decoder
  */
-encoder_context *encoder_init(enc_id id, decoder_context *dec_ctx , window_context *w_ctx)
+encoder_context *encoder_init(enc_id id, decoder_context *dc, window_context *wc)
 {
-	encoder_context *enc_ctx;
+	encoder_context *ec;
 	AVCodecContext *avctx;
 	AVCodec *codec;
 	AVDictionary *options = NULL;
 
-	enc_ctx = malloc(sizeof(encoder_context));
-	if (!enc_ctx)
+	ec = malloc(sizeof(encoder_context));
+	if (!ec)
 		pexit("malloc failed");
 
 	switch (id) {
-		case LIBX264:
+	case LIBX264:
 		set_codec_options(&options, LIBX264);
 		codec = avcodec_find_encoder_by_name("libx264");
 		break;
-		case LIBX265:
+	case LIBX265:
 		set_codec_options(&options, LIBX265);
 		codec = avcodec_find_encoder_by_name("libx265");
 		break;
-		default:
+	default:
 		codec = NULL;
 	}
 
@@ -82,25 +81,25 @@ encoder_context *encoder_init(enc_id id, decoder_context *dec_ctx , window_conte
 	if (!avctx)
 		pexit("avcodec_alloc_context3 failed");
 
-	avctx->time_base = dec_ctx->avctx->time_base;
-	avctx->pix_fmt = codec->pix_fmts[0]; //first supported pixel format
-	avctx->width = dec_ctx->avctx->width;
-	avctx->height = dec_ctx->avctx->height;
+	avctx->time_base	= dc->avctx->time_base;
+	avctx->pix_fmt		= codec->pix_fmts[0]; //first supported pixel format
+	avctx->width		= dc->avctx->width;
+	avctx->height		= dc->avctx->height;
 
 	if (avcodec_open2(avctx, avctx->codec, &options) < 0)
 		pexit("avcodec_open2 failed");
 
-	enc_ctx->frame_queue = dec_ctx->frame_queue;
+	ec->frame_queue = dc->frame_queue;
 	/* output queues have length 1 to enforce RT processing */
-	enc_ctx->packet_queue = queue_init(1);
-	enc_ctx->lag_queue = queue_init(1);
+	ec->packet_queue = queue_init(1);
+	ec->lag_queue = queue_init(1);
 
-	enc_ctx->avctx = avctx;
-	enc_ctx->options = options;
-	enc_ctx->w_ctx = w_ctx;
-	enc_ctx->id = id;
+	ec->avctx = avctx;
+	ec->options = options;
+	ec->w_ctx = wc;
+	ec->id = id;
 
-	return enc_ctx;
+	return ec;
 }
 
 void encoder_free(encoder_context **e_ctx)
