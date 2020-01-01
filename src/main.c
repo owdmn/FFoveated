@@ -127,7 +127,7 @@ int main(int argc, char **argv)
 
 		r_ctx = reader_init(video_paths[i], queue_capacity);
 		source_d_ctx = source_decoder_init(r_ctx, queue_capacity);
-		e_ctx = encoder_init(LIBX265, source_d_ctx->avctx, 1, w_ctx, source_d_ctx->frame_queue);
+		e_ctx = encoder_init(LIBX265, source_d_ctx->avctx, w_ctx, source_d_ctx->frame_queue);
 		fov_d_ctx = fov_decoder_init(e_ctx->packet_queue, LIBX265);
 
 		reader = SDL_CreateThread(reader_thread, "reader_thread", r_ctx);

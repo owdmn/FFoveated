@@ -48,14 +48,18 @@ typedef enum {
 } enc_id;
 
 /**
- * Create and initialize an encoder context
+ * Create and initialize a realtime (re)encoder context
  *
+ * Output queues have length 1 to enforce consumption of already processed
+ * frames before futher frames can be added. Further buffering is unnecessary
+ * in real-time applications.
  * Calls pexit in case of a failure
  * @param avctx av codec context of the previous decoder: dec_ctx->avctx
- * @param queue_capacity output packet queue capacity
+ * @param w_ctx window context to provide physical screen properties
+ * @param frame_queue input frame queue
  * @return encoder_context with initialized fields and opened decoder
  */
-encoder_context *encoder_init(enc_id id, AVCodecContext *avctx, int queue_capacity, window_context *w_ctx, Queue *frame_queue);
+encoder_context *encoder_init(enc_id id, AVCodecContext *avctx, window_context *w_ctx, Queue *frame_queue);
 
 /**
  * Free the encoder context and associated data.

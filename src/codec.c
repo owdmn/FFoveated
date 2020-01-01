@@ -26,7 +26,7 @@
  * @param queue_capacity output packet queue capacity
  * @return encoder_context with initialized fields and opened decoder
  */
-encoder_context *encoder_init(enc_id id, AVCodecContext *dec_avctx, int queue_capacity, window_context *w_ctx, Queue *frame_queue)
+encoder_context *encoder_init(enc_id id, AVCodecContext *dec_avctx, window_context *w_ctx, Queue *frame_queue)
 {
 	encoder_context *enc_ctx;
 	AVCodecContext *avctx;
@@ -72,8 +72,10 @@ encoder_context *encoder_init(enc_id id, AVCodecContext *dec_avctx, int queue_ca
 		pexit("avcodec_open2 failed");
 
 	enc_ctx->frame_queue = frame_queue;
-	enc_ctx->packet_queue = queue_init(queue_capacity);
-	enc_ctx->lag_queue = queue_init(queue_capacity);
+	/* output queues have length 1 to enforce RT processing */
+	enc_ctx->packet_queue = queue_init(1);
+	enc_ctx->lag_queue = queue_init(1);
+
 	enc_ctx->avctx = avctx;
 	enc_ctx->options = options;
 	enc_ctx->w_ctx = w_ctx;
