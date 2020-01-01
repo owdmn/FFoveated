@@ -312,14 +312,14 @@ int decoder_thread(void *ptr)
 	return 0;
 }
 
-decoder_context *fov_decoder_init(encoder_context *enc_ctx)
+decoder_context *fov_decoder_init(encoder_context *ec)
 {
 	AVCodecContext *avctx;
 	AVCodec *codec;
-	decoder_context *d;
+	decoder_context *dc;
 	int ret;
 
-	codec = avcodec_find_decoder(enc_ctx->avctx->codec->id);
+	codec = avcodec_find_decoder(ec->avctx->codec->id);
 
 	if (!codec)
 		pexit("avcodec_find_decoder_by_name failed");
@@ -332,15 +332,15 @@ decoder_context *fov_decoder_init(encoder_context *enc_ctx)
 	if (ret < 0)
 		pexit("avcodec_open2 failed");
 
-	d = malloc(sizeof(decoder_context));
-	if (!d)
+	dc = malloc(sizeof(decoder_context));
+	if (!dc)
 		pexit("malloc failed");
 
-	d->packet_queue = enc_ctx->packet_queue;
-	d->frame_queue = queue_init(1);
-	d->avctx = avctx;
+	dc->packet_queue = ec->packet_queue;
+	dc->frame_queue = queue_init(1);
+	dc->avctx = avctx;
 
-	return d;
+	return dc;
 }
 
 void decoder_free(decoder_context **d_ctx)
