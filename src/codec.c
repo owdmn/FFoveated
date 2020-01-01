@@ -17,11 +17,6 @@
 
 #include "codec.h"
 
-/**
- * Set codec options for the given encoder id
- * @param options AVDictionary to be set or altered
- * @param id encoder id
- */
 static void set_codec_options(AVDictionary **opt, enc_id id)
 {
 	switch (id) {
@@ -42,14 +37,6 @@ static void set_codec_options(AVDictionary **opt, enc_id id)
 	}
 }
 
-/**
- * Create and initialize an encoder context
- *
- * Calls pexit in case of a failure
- * @param dec_ctx context of the previous decoder
- * @param queue_capacity output packet queue capacity
- * @return encoder_context with initialized fields and opened decoder
- */
 encoder_context *encoder_init(enc_id id, decoder_context *dc, window_context *wc)
 {
 	encoder_context *ec;
