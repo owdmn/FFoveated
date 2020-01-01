@@ -217,13 +217,13 @@ float *foveation_descriptor(window_context *wc)
 	return f;
 }
 
-decoder_context *source_decoder_init(reader_context *r_ctx, int queue_capacity)
+decoder_context *source_decoder_init(reader_context *rc, int queue_capacity)
 {
 	AVCodecContext *avctx;
-	decoder_context *d;
+	decoder_context *dc;
 	int ret;
-	int index = r_ctx->stream_index;
-	AVStream *stream = r_ctx->format_ctx->streams[index];
+	int index = rc->stream_index;
+	AVStream *stream = rc->format_ctx->streams[index];
 	AVCodec *codec;
 
 	avctx = avcodec_alloc_context3(NULL);
@@ -246,15 +246,15 @@ decoder_context *source_decoder_init(reader_context *r_ctx, int queue_capacity)
 	if (ret < 0)
 		pexit("avcodec_open2 failed");
 
-	d = malloc(sizeof(decoder_context));
-	if (!d)
+	dc = malloc(sizeof(decoder_context));
+	if (!dc)
 		pexit("malloc failed");
 
-	d->packet_queue = r_ctx->packet_queue;
-	d->frame_queue = queue_init(queue_capacity);
-	d->avctx = avctx;
+	dc->packet_queue = rc->packet_queue;
+	dc->frame_queue = queue_init(queue_capacity);
+	dc->avctx = avctx;
 
-	return d;
+	return dc;
 }
 
 void supply_packet(AVCodecContext *avctx, AVPacket *packet)
