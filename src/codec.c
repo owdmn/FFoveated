@@ -102,18 +102,17 @@ encoder_context *encoder_init(enc_id id, decoder_context *dc, window_context *wc
 	return ec;
 }
 
-void encoder_free(encoder_context **e_ctx)
+void encoder_free(encoder_context **ec)
 {
 	encoder_context *e;
 
-	e = *e_ctx;
+	e = *ec;
 	queue_free(e->packet_queue);
 	queue_free(e->lag_queue);
 	avcodec_free_context(&e->avctx);
 	av_dict_free(&e->options);
-
 	free(e);
-	*e_ctx = NULL;
+	*ec= NULL;
 }
 
 void supply_frame(AVCodecContext *avctx, AVFrame *frame)
@@ -133,7 +132,7 @@ void supply_frame(AVCodecContext *avctx, AVFrame *frame)
 
 int encoder_thread(void *ptr)
 {
-	encoder_context *enc_ctx = (encoder_context *) ptr;
+	encoder_context *ec = (encoder_context *) ptr;
 	AVFrame *frame;
 	AVPacket *packet;
 	AVFrameSideData *sd;
@@ -148,13 +147,13 @@ int encoder_thread(void *ptr)
 		if (!packet)
 			pexit("av_packet_alloc failed");
 
-		ret = avcodec_receive_packet(enc_ctx->avctx, packet);
+		ret = avcodec_receive_packet(ec->avctx, packet);
 		if (ret == 0) {
-			queue_append(enc_ctx->packet_queue, packet);
+			queue_append(ec->packet_queue, packet);
 			packet = av_packet_alloc();
 			continue;
 		} else if (ret == AVERROR(EAGAIN)) {
-			frame = queue_extract(enc_ctx->frame_queue);
+			frame = queue_extract(ec->frame_queue);
 
 			if (!frame)
 				break;
@@ -162,11 +161,11 @@ int encoder_thread(void *ptr)
 			sd = av_frame_new_side_data(frame, AV_FRAME_DATA_FOVEATION_DESCRIPTOR, descr_size);
 			if (!sd)
 				pexit("side data allocation failed");
-			descr = foveation_descriptor(enc_ctx->w_ctx);
+			descr = foveation_descriptor(ec->w_ctx);
 			sd->data = (uint8_t *) descr;
 
 			frame->pict_type = 0; //keep undefined to prevent warnings
-			supply_frame(enc_ctx->avctx, frame);
+			supply_frame(ec->avctx, frame);
 			av_frame_free(&frame);
 
 			timestamp = malloc(sizeof(int64_t));
@@ -174,7 +173,7 @@ int encoder_thread(void *ptr)
 				perror("malloc failed");
 			*timestamp = av_gettime_relative();
 
-			queue_append(enc_ctx->lag_queue, timestamp);
+			queue_append(ec->lag_queue, timestamp);
 
 		} else if (ret == AVERROR_EOF) {
 			break;
@@ -183,9 +182,9 @@ int encoder_thread(void *ptr)
 		}
 	}
 
-	queue_append(enc_ctx->packet_queue, NULL);
-	avcodec_close(enc_ctx->avctx);
-	avcodec_free_context(&enc_ctx->avctx);
+	queue_append(ec->packet_queue, NULL);
+	avcodec_close(ec->avctx);
+	avcodec_free_context(&ec->avctx);
 	return 0;
 }
 
