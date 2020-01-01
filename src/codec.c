@@ -188,24 +188,18 @@ int encoder_thread(void *ptr)
 	return 0;
 }
 
-/**
- * Allocate a foveation descriptor to pass to an encoder
- *
- * @param w_ctx window context
- * @return float* 4-tuple: x and y coordinate, standarddeviation and offset
- */
-float *foveation_descriptor(window_context *w_ctx)
+float *foveation_descriptor(window_context *wc)
 {
 	float *f;
 	int width, height;
 
-	SDL_GetWindowSize(w_ctx->window, &width, &height);
+	SDL_GetWindowSize(wc->window, &width, &height);
 
 	f = malloc(4*sizeof(float));
 	if (!f)
 		pexit("malloc failed");
 
-	#ifdef __MINGW32__
+	#ifdef ET
 	// eye-tracking
 	f[0] =
 	f[1] =
@@ -214,15 +208,14 @@ float *foveation_descriptor(window_context *w_ctx)
 
 	#else
 	// fake mouse motion dummy values
-	SDL_GetMouseState(&w_ctx->mouse_x, &w_ctx->mouse_y);
-	f[0] = (float) w_ctx->mouse_x / width;
-	f[1] = (float) w_ctx->mouse_y / height;
+	SDL_GetMouseState(&wc->mouse_x, &wc->mouse_y);
+	f[0] = (float) wc->mouse_x / width;
+	f[1] = (float) wc->mouse_y / height;
 	f[2] = 0.3;
 	f[3] = 20;
 	#endif
 	return f;
 }
-
 
 decoder_context *source_decoder_init(reader_context *r_ctx, int queue_capacity)
 {
