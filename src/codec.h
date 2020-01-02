@@ -21,86 +21,87 @@
 #include <libavutil/time.h>
 #include "io.h"
 
-/**
- * ids for supported encoders
- */
+// ids to identify supported codecs
 typedef enum {
 	LIBX264,
 	LIBX265,
 	LIBVPX,
 } enc_id;
 
-// Passed to decoder_thread through SDL_CreateThread
+/**
+ * Decoder context / status information.
+ * Queues allow to consume packets and emit frames.
+ * Passed to decoder_thread through SDL_CreateThread
+ */
 typedef struct dec_ctx {
 	Queue *packets; //input
 	Queue *frames;  //output
-	AVCodecContext *avctx;
+	AVCodecContext *avctx; //to access internals (time_base etc.)
 	enc_id id;
 } dec_ctx;
 
-// Passed  to encoder_thread through SDL_CreateThread
+/**
+ * Encoder context / status information.
+ * Passed  to encoder_thread through SDL_CreateThread
+ */
 typedef struct enc_ctx {
 	Queue *packets; //output
 	Queue *frames;  //input
 	Queue *timestamps; //timestamps to measure encoding-decoding-display lag
 	AVCodecContext *avctx;
-	AVDictionary *options;
+	AVDictionary *options; //encoder options
 	win_ctx *wc; //required for fake-foveation using the mouse pointer
 	enc_id id;
 } enc_ctx;
 
 /**
- * Create and initialize a realtime (re)encoder context
+ * Initialize a realtime (re)encoder
  *
  * Output queues have length 1 to enforce consumption of already processed
- * frames before futher frames can be added. Further buffering is unnecessary
- * in real-time applications.
- * Calls pexit in case of a failure
- * @param id internal id of supported codecs
- * @param dec_ctx context of the supplying decoder
- * @param w_ctx window context, necessary für fake-gaze through the mouse pointer
- * @return encoder_context with initialized fields and opened decoder
+ * frames before futher frames can be added, as additional buffering is unnecessary
+ * in real time applications.
+ * @param id identifies the encoder to use.
+ * @param dc context of the decoder which supplies the frames, to set e.g. the time base.
+ * @param w_ctx window context, necessary for pseudo-gaze emulation through the mouse pointer.
+ * @return enc_ctx with fields initialized and an opened encoder
  */
 enc_ctx *encoder_init(enc_id id, dec_ctx *dc, win_ctx *wc);
 
 /**
  * Free the encoder context and associated data.
  *
- * frame_queue and w_ctx have to be freed by the respecive decoder_free
- * and window_free funcions.
- * @param e_ctx encoder_context to be freed.
+ * frames and wc have to be freed separately, usually through
+ * the decoder_free and window_free functions.
+ * @param ec encoder context to be freed.
  */
 void encoder_free(enc_ctx **ec);
 
 /**
- * Encode AVFrames and put the compressed AVPacktes in a queue
+ * Encode AVFrames, put the resulting AVPacktes in a queue
  *
- * Call avcodec_receive_packet in a loop, enqueue encoded packets
+ * Call avcodec_receive_packet in a loop, enqueue encoded packets.
  * Adds NULL packet to queue in the end.
- *
- * Calls pexit in case of a failure
- * @param ptr will be casted to (encoder_context *)
+ * @param ptr will be casted to (enc_ctx *)
  * @return int 0 on success
  */
 int encoder_thread(void *ptr);
 
 /**
- * Allocate a foveation descriptor to pass to an encoder
+ * Allocate a foveation descriptor to pass to an encoder as AVSideData
  *
- * @param w_ctx window context
- * @return float* 4-tuple: x and y coordinate, standarddeviation and offset
+ * @param wc required for pseudo-foveation through the mouse pointer.
+ * @return float* 4-tuple: x and y coordinate, stddev and max quality offset
  */
 float *foveation_descriptor(win_ctx *wc);
+
 /**
- * Create and initialize a decoder context.
+ * Initialize a source decoder.
  *
- * A decoder context inherits the necessary fields from a reader context to fetch
- * AVPacktes from its packet_queue and adds a frame_queue to emit decoded AVFrames.
- *
- * Calls pexit in case of a failure.
- * @param r reader context to copy format_ctx, packet_queue and stream_index from.
- * @param queue_capacity output frame queue capacity.
- * @return decoder_context* with all members initialized.
+ * This function copies information from a reader context, to share e.g.
+ * the reader's output (packets queue) and use fetch input for the decoder.
+ * @param rc to copy fctx, packets and stream_index from.
+ * @param queue_capacity output buffer size.
+ * @return decoder_context with members initialized and an opened decoder.
  */
 dec_ctx *source_decoder_init(rdr_ctx *rc, int queue_capacity);
 
@@ -109,30 +110,24 @@ dec_ctx *source_decoder_init(rdr_ctx *rc, int queue_capacity);
  *
  * Call avcodec_receive_frame in a loop, enqueue decoded frames.
  * Adds NULL packet to queue in the end.
- *
- * Calls pexit in case of a failure
  * @param *ptr will be cast to (decoder_context *)
  * @return int 0 on success.
  */
 int decoder_thread(void *ptr);
 
 /**
- * Create and initialize a decoder context.
+ * Initialize a foveated decoder.
  *
- * The decoder context inherits the necessary fields from an encoder context.
- *
- * Calls pexit in case of a failure.
- * @param e_ctx foveated encoder context
- * @return decoder_context* with all members initialized.
+ * @param ec used to copy e.g. the codec id from.
+ * @return decoder_context* with members initialized and an opened decoder.
  */
 dec_ctx *fov_decoder_init(enc_ctx *ec);
 
 /**
  * Free the decoder_context and associated data, set d_ctx to NULL.
  *
- * Does NOT free packet_queue, which is freed through freeing its source
- * context, e.g. a reader or an encoder.
- * Finally, set d_ctx to NULL.
- * @param d_ctx decoder context to be freed.
+ * Does not free packets, which is freed through freeing its source context,
+ * e.g. a reader or an encoder. Set dc to NULL.
+ * @param dc decoder context to be freed.
  */
 void decoder_free(dec_ctx **dc);
