@@ -170,6 +170,7 @@ int encoder_thread(void *ptr)
 	}
 
 	queue_append(ec->packets, NULL);
+	queue_append(ec->timestamps, NULL);
 	avcodec_close(ec->avctx);
 	avcodec_free_context(&ec->avctx);
 	return 0;
