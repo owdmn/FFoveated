@@ -390,14 +390,10 @@ int frame_refresh(win_ctx *wc)
 	return 0;
 }
 
-void set_window_queues(win_ctx *wc, Queue *frames, Queue *timestamps)
+void set_window_source(win_ctx *wc, Queue *frames, Queue *timestamps, AVRational time_base)
 {
 	wc->frames = frames;
 	wc->timestamps = timestamps;
-}
-
-void set_window_timing(win_ctx *wc, AVRational time_base)
-{
 	wc->time_base = time_base;
 	wc->time_start = -1;
 }

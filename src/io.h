@@ -77,61 +77,53 @@ void pexit_(const char *msg, const char *file, const int line);
 #define pexit(s) pexit_(s, __FILE__, __LINE__)
 
 /**
- * Create and initialize a Queue structure.
+ * Create and initialize a queue structure.
  *
  * Allocates storage on the heap.
- * Calls pexit in case of failure.
  * Use free_queue to dispose of pointers acquired through this function.
  * @param capacity number of elements the queue is able to store.
- * @return Queue* ready to use queue. See enqueue, dequeue, free_queue.
+ * @return initialized queue. See enqueue, dequeue, free_queue.
  */
 Queue *queue_init(size_t capacity);
 
 /**
- * Free and dismantle a Queue structure.
+ * Free a Queue.
  *
  * The mutex and the full/empty condition variables are destroyed.
- * Calls free on both q->data and subsequently q itself.
- * This function does not take care of any remaining elements in the queue,
- * which have to be handled manually. Caution: This can lead to data leaks.
+ * Calls free on both q->data and subsequently q itself, which is set to NULL.
+ * This function does not take care of any remaining elements in the queue!
+ * These have to be handled manually. Caution: This can lead to data leaks.
  */
 void queue_free(Queue **q);
 
 /**
  * Add data to end of the queue.
  *
- * Blocks if there is no space left in q, waiting for SDL_CondSignal to be
- * called on the full condition variable.
- * Calls pexit in case of a failure.
- * @param q pointer to a valid Queue structure.
- * @param data will be added to q->data.
+ * Blocks if there is no space left, waiting for a signal on the full condition variable.
+ * @param q Queue acquired through queue_init.
+ * @param data will be appended to q->data.
  */
 void queue_append(Queue *q, void *data);
 
 /**
- * Extract the first element of the queue.
+ * Extract the first element of a queue.
  *
- * Blocks if there is no element in q, waiting for SDL_CondSignal to be called
- * on the empty condition variable.
- * Elements are not safely removed from the queue (read: not overwritten)
- * and might still be accessible at a later point in time.
- * Calls pexit in case of a failure.
- * @param q pointer to a valid Queue struct.
- * @return void* the formerly first element of q.
+ * Blocks if there is no element in q, waiting for a signal on the empty condition variable.
+ * Pointers are not safely removed from the queue (not overwritten) and might still be
+ * accessible at a later point in time.
+ * @param q pointer to a valid Queue acquired through queue_init.
+ * @return void* the first element of q.
  */
 void *queue_extract(Queue *q);
 
 /**
  * Parse a file line by line.
  *
- * At most PATH_MAX characters per line are supported, the purpose
- * is to parse a file containing pathnames.
- * Each line is sanitized: A trailing newline character is replaced
- * with a nullbyte. The returned pointer array is also NULL terminated.
- * Can be freed by using free_lines.
- * All contained pointers and the array itself must be passed to free()
- * Calls pexit in case of a failure.
- * @param pathname path to an ascii file to be opened and parsed
+ * At most PATH_MAX characters per line are supported, the purpose is to parse
+ * a file containing pathnames. Each line is sanitized: A trailing newline
+ * character is replaced with a nullbyte. The returned pointer array is also NULL
+ * terminated. The resulting array be freed by using free_lines.
+ * @param pathname of an ascii file to be opened and parsed
  * @return NULL-terminated array of char* to line contents
  */
 char **parse_lines(const char *pathname);
@@ -139,7 +131,7 @@ char **parse_lines(const char *pathname);
 /**
  * Free an array of char pointers allocated by parse_lines.
  *
- * Free each char* in the array, finally free lines itself and set it to NULL.
+ * Free each char* in the array, finally free the array itself and set it to NULL.
  * @param lines char* array to be freed.
  */
 void free_lines(char ***lines);
@@ -149,25 +141,28 @@ void free_lines(char ***lines);
  * Read a video file and put the contained AVPackets in a queue.
  *
  * Call av_read_frame repeatedly. Filter the returned packets by their stream
- * index, discarding everything but video packets, such as audio or subtitles.
- * Enqueue video packets in reader_ctx->packet_queue.
+ * index, discarding everything but video packets (e.g. audio or subtitles).
+ * Enqueue video packets in reader_ctx->packets.
  * Upon EOF, enqueue a NULL pointer.
  *
  * This function is to be used through SDL_CreateThread.
- * The resulting thread will block if reader_ctx->queue is full.
- * Calls pexit in case of a failure.
- * @param void *ptr will be cast to (file_reader_context *)
+ * The resulting thread will block if the packets queue runs full.
+ * @param void *ptr will be cast to (rdr_ctx *)
  * @return int
  */
 int reader_thread(void *ptr);
 
 /**
- * Set the frame queue for the given window context to q
+ * Update a window in order to display a new input video.
  *
- * @param q frame queue
- * @param w_ctx to be updated
+ * Set frame and timestamp queues, set the time_base to match the new input videos
+ * time_base and set the start_time to -1.
+ * @param wc window context to update
+ * @param frames new input queue for frames to be displayed
+ * @param timestamps new encoder timestamp queue
+ * @param time_base new time base to display frames at correct pts
  */
-void set_window_queues(win_ctx *wc, Queue *frames, Queue *timestamps);
+void set_window_source(win_ctx *wc, Queue *frames, Queue *timestamps, AVRational time_base);
 
 /**
  * Create and initialize a reader context.
@@ -239,11 +234,3 @@ void center_rect(SDL_Rect *rect, win_ctx *w_ctx, AVFrame *f);
  */
 int frame_refresh(win_ctx *w_ctx);
 
-/**
- * Set the time_base for the presentation window context.
- * Sets time_start to -1, which is required before entering event_loop.
- *
- * @param w_ctx the window context to be updated
- * @param d_ctx the cont ext of the original decoder
- */
-void set_window_timing(win_ctx *w_ctx, AVRational time_base);
