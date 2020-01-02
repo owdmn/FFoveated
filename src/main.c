@@ -51,30 +51,25 @@ void display_usage(char *progname)
 void event_loop(win_ctx *wc)
 {
 	SDL_Event event;
-	int queue_drained = 0;
 
 	if (wc->time_start != -1)
 		pexit("Error: call set_timing first");
 
 	for (;;) {
 		/* check for events to handle, meanwhile just render frames */
-		while (!SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {
-			if (frame_refresh(wc)) {
-				queue_drained = 1;
-				break;
-			}
-			SDL_PumpEvents();
-		}
-		if (queue_drained)
+		if(frame_refresh(wc))
 			break;
 
-		switch (event.type) {
-		case SDL_KEYDOWN:
-			switch (event.key.keysym.sym) {
-			case SDLK_q:
-				pexit("q pressed");
+		SDL_PumpEvents();
+		if(SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {
+			switch (event.type) {
+			case SDL_KEYDOWN:
+				switch (event.key.keysym.sym) {
+				case SDLK_q:
+					pexit("q pressed");
 			}
 			break;
+			}
 		}
 
 	}
