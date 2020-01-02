@@ -275,8 +275,8 @@ win_ctx *window_init(float screen_width, float screen_height)
 		pexit("malloc failed");
 	wc->window = window;
 	wc->texture = NULL;
-	wc->screen_width = screen_width;
-	wc->screen_height = screen_height;
+	wc->screen_w = screen_width;
+	wc->screen_h = screen_height;
 	return wc;
 }
 
