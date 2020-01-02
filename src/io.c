@@ -51,13 +51,14 @@ Queue *queue_init(size_t capacity)
 	return q;
 }
 
-void queue_free(Queue *q)
+void queue_free(Queue **q)
 {
-	SDL_DestroyMutex(q->mutex);
-	SDL_DestroyCond(q->full);
-	SDL_DestroyCond(q->empty);
-	free(q->data);
-	free(q);
+	Queue *qd = *q;
+	SDL_DestroyMutex(qd->mutex);
+	SDL_DestroyCond(qd->full);
+	SDL_DestroyCond(qd->empty);
+	free(qd->data);
+	free(*q);
 }
 
 void queue_append(Queue *q, void *data)
@@ -237,7 +238,7 @@ void reader_free(rdr_ctx **rc)
 
 	r = *rc;
 	free(r->filename);
-	queue_free(r->packets);
+	queue_free(&r->packets);
 	avformat_free_context(r->fctx);
 	free(*rc);
 	*rc = NULL;

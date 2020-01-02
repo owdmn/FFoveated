@@ -94,8 +94,8 @@ void encoder_free(enc_ctx **ec)
 	enc_ctx *e;
 
 	e = *ec;
-	queue_free(e->packets);
-	queue_free(e->timestamps);
+	queue_free(&e->packets);
+	queue_free(&e->timestamps);
 	avcodec_free_context(&e->avctx);
 	av_dict_free(&e->options);
 	free(e);
@@ -336,7 +336,7 @@ void decoder_free(dec_ctx **dc)
 
 	d = *dc;
 	avcodec_free_context(&d->avctx);
-	queue_free(d->frames);
+	queue_free(&d->frames);
 	/* packet_queue is freed by reader_free! */
 	free(d);
 	*dc = NULL;

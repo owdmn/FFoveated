@@ -95,7 +95,7 @@ Queue *queue_init(size_t capacity);
  * This function does not take care of any remaining elements in the queue,
  * which have to be handled manually. Caution: This can lead to data leaks.
  */
-void queue_free(Queue *q);
+void queue_free(Queue **q);
 
 /**
  * Add data to end of the queue.
