@@ -274,8 +274,6 @@ win_ctx *window_init(float screen_width, float screen_height)
 	if (!wc)
 		pexit("malloc failed");
 	wc->window = window;
-	wc->width = dm.w;
-	wc->height = dm.h;
 	wc->texture = NULL;
 	wc->screen_width = screen_width;
 	wc->screen_height = screen_height;
@@ -313,33 +311,29 @@ void realloc_texture(win_ctx *wc, AVFrame *frame)
 
 void center_rect(SDL_Rect *rect, win_ctx *wc, AVFrame *f)
 {
-	int width, height, x, y;
-	AVRational aspect_ratio = av_make_q(f->width, f->height);
+	int win_w, win_h;
+	SDL_GetWindowSize(wc->window, &win_w, &win_h);
+	AVRational ratio = av_make_q(f->width, f->height); //aspect ratio
 
 	// check if the frame fully fits into the window
-	if (wc->height >= f->height && wc->width >= f->width) {
-		x = (wc->width - f->width) / 2;
-		y = (wc->height - f->height) / 2;
-		width = f->width;
-		height = f->height;
+	if (win_h >= f->height && win_w >= f->width) {
+		rect->x = (win_w - f->width) / 2;
+		rect->y  = (win_h - f->height) / 2;
+		rect->w = f->width;
+		rect->h = f->height;
 	} else { //frame does not fit completely, do a fit
 		// fix height to window, adapt width according to frame
-		height = wc->height;
-		width = av_rescale(height, aspect_ratio.num, aspect_ratio.den);
+		rect->h = win_h;
+		rect->w = av_rescale(rect->h, ratio.num, ratio.den);
 		// if that does not fit, fix width to window, adapt height
-		if (width > wc->width) {
-			width = wc->width;
-			height = av_rescale(width, aspect_ratio.den, aspect_ratio.num);
+		if (rect->w > win_w) {
+			rect->w = win_w;
+			rect->h = av_rescale(win_w, ratio.den, ratio.num);
 		}
 		// margins for black bars if aspect ratio does not fit
-		x = (wc->width - width) / 2;
-		y = (wc->height - height) / 2;
+		rect->x = (win_w - rect->w) / 2;
+		rect->y = (win_h - rect->h) / 2;
 	}
-
-	rect->x = x; //left
-	rect->y = y; //top
-	rect->w = width;
-	rect->h = height;
 }
 
 int frame_refresh(win_ctx *wc)

@@ -178,9 +178,11 @@ int encoder_thread(void *ptr)
 float *foveation_descriptor(win_ctx *wc)
 {
 	float *fd;
-	int width, height;
+	int x, y, w, h;
 
-	SDL_GetWindowSize(wc->window, &width, &height);
+	SDL_GetMouseState(&x, &y);
+	SDL_GetWindowSize(wc->window, &w, &h);
+
 	fd = malloc(4*sizeof(float));
 	if (!fd)
 		pexit("malloc failed");
@@ -194,9 +196,8 @@ float *foveation_descriptor(win_ctx *wc)
 
 	#else
 	// fake mouse motion dummy values
-	SDL_GetMouseState(&wc->mouse_x, &wc->mouse_y);
-	fd[0] = (float) wc->mouse_x / width;
-	fd[1] = (float) wc->mouse_y / height;
+	fd[0] = (float) x / w;
+	fd[1] = (float) y / h;
 	fd[2] = 0.3;
 	fd[3] = 20;
 	#endif

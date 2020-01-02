@@ -75,19 +75,6 @@ void event_loop(win_ctx *wc)
 				pexit("q pressed");
 			}
 			break;
-		case SDL_WINDOWEVENT:
-			switch (event.window.event) {
-			case SDL_WINDOWEVENT_RESIZED:
-				wc->width = event.window.data1;
-				wc->height = event.window.data2;
-				SDL_DestroyTexture(wc->texture);
-				wc->texture = NULL;
-			break;
-			}
-			break;
-		case SDL_MOUSEMOTION:
-			SDL_GetMouseState(&wc->mouse_x, &wc->mouse_y);
-			break;
 		}
 
 	}

@@ -54,10 +54,6 @@ typedef struct win_ctx {
 	Queue *timestamps;
 	SDL_Window *window;
 	SDL_Texture *texture;
-	int width;
-	int height;
-	int mouse_x;
-	int mouse_y;
 	float screen_width;
 	float screen_height;
 	int64_t time_start;
