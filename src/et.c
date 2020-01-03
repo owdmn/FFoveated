@@ -52,8 +52,8 @@ int __stdcall update_gaze(struct SampleStruct sampleData)
 	*/
 	double x, y, z; //mean eye coordinates for distance
 	double theta;
-	SDL_LockMutex(gs->mutex);
 
+	SDL_LockMutex(gs->mutex);
 	gs->left.x = sampleData.leftEye.eyePositionX;
 	gs->left.y = sampleData.leftEye.eyePositionY;
 	gs->left.z = sampleData.leftEye.eyePositionZ;
@@ -78,12 +78,13 @@ int __stdcall update_gaze(struct SampleStruct sampleData)
 	//calculate screen pixel coordinates in 3d space
 	//calculate distance
 
-	gs->distance =
+	//gs->distance =
 
 	gs->x = mean_x;
 	gs->y = mean_y;
-	gs->distance = sampleData.leftEye.
-	SDL_UnlockMutex(gs->mutex);
+	//gs->distance = sampleData.leftEye.
+
+	//SDL_UnlockMutex(gs->mutex);
 	return 0;
 }
 
