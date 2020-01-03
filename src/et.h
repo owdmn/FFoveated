@@ -17,25 +17,39 @@
 
 #pragma once
 
+#include <SDL2/SDL.h>
+#include "io.h"
 #ifdef ET
 #include <iViewXAPI.h>
 #endif
 
-#include <SDL2/SDL.h>
 
-typedef struct gaze_struct {
-	int screen_x;
-	int screen_y;
-	double diam_l; //pupil diameter
-	double diam_r;
-	double distance; //mean eye-screen dist
-	SDL_mutex *mutex;
-} gaze_struct;
-
-typedef struct tracker_position {
-	double screen_width;
+/* Data to be set as REDGeometryStruct */
+typedef struct lab_setup {
+	double screen_width; // in mm mm
 	double screen_height;
-	double tracker_depth;
-	double tracker_height;
-	double tracker_angle; //20° with the SMI bracket
-} tracker_position;
+	double camera_x;
+	double camera_z;
+	double camera_inclination;
+} lab_setup;
+
+typedef struct eye_data {
+	double diam;
+	double x; //3d coordinates in mm relative to the camera
+	double y;
+	double z;
+	double gazeX;
+	double gazeY;
+} eye_data;
+
+typedef struct gaze {
+	int mean_x;
+	int mean_y;
+	eye_data left;
+	eye_data right;
+	double distance; //mean eye-screen distance
+	SDL_mutex *mutex;
+} gaze;
+
+
+void setup_ivx(SDL_Window *w);

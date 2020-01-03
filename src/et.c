@@ -17,29 +17,79 @@
 
 #include "et.h"
 
+gaze *gs;
+lab_setup *ls;
+SDL_Window *win;
+
+static void setup(SDL_Window *w)
+{
+	win = w;
+
+	gs = malloc(sizeof(gaze));
+	if (!gs)
+		pexit("malloc failed");
+
+	ls = malloc(sizeof(lab_setup));
+	if (!ls)
+		pexit("malloc failed");
+
+	// Hardcoded 15.6" 16:9 FHD notebook display dimensions
+	ls->screen_width = 345;
+	ls->screen_height = 194;
+	ls->camera_x = 0;
+	ls->camera_z = 0;
+	ls->camera_inclination = 20; //degrees upward for the SMI bracket
+	gs->mutex = SDL_CreateMutex();
+}
+
 #ifdef ET
 int __stdcall update_gaze(struct SampleStruct sampleData)
 {
-	int screen_x, screen_y;
+	/*
+	int mean_x, mean_y;
+	mean_x = (sampleData.leftEye.gazeX + sampleData.rightEye.gazeX) / 2;
+	mean_y = (sampleData.leftEye.gazeY + sampleData.rightEye.gazeY) / 2;
+	*/
+	double x, y, z; //mean eye coordinates for distance
+	double theta;
+	SDL_LockMutex(gs->mutex);
+
+	gs->left.x = sampleData.leftEye.eyePositionX;
+	gs->left.y = sampleData.leftEye.eyePositionY;
+	gs->left.z = sampleData.leftEye.eyePositionZ;
+	gs->right.x = sampleData.rightEye.eyePositionX;
+	gs->right.y = sampleData.rightEye.eyePositionY;
+	gs->right.z = sampleData.rightEye.eyePositionZ;
+
+	gs->left.diam = sampleData.leftEye.diam;
+	gs->right.diam = sampleData.rightEye.diam;
+
+	/* mean eye coordinates in 3d space */
+	x = (gs->left.x + gs->right.x) / 2;
+	y = (gs->left.y + gs->right.y) / 2;
+	z = (gs->left.z + gs->right.z) / 2;
+
+	theta = ls->camera_inclination;
 
 
-	if (!gaze)
-		gaze = malloc(sizeof(gaze_struct))
-		pexit("gaze struct not initialized")
+	//FIXME: Need to know the sign of these coordinate systems
 
-	screen_x = (sampleData.leftEye.gazeX + sampleData.rightEye.gazeX) / 2;
-	screen_y = (sampleData.leftEye.gazeY + sampleData.rightEye.gazeY) / 2;
+	//shift + rotate to map camera coordinates to screen-specific 3d coordinates
+	//calculate screen pixel coordinates in 3d space
+	//calculate distance
 
+	gs->distance =
 
-	SDL_LockMutex(gaze->mutex);
-	gaze->
-
-	SDL_UnlockMutex(gaze->mutex);
+	gs->x = mean_x;
+	gs->y = mean_y;
+	gs->distance = sampleData.leftEye.
+	SDL_UnlockMutex(gs->mutex);
 	return 0;
 }
 
-void setup_ivx(void)
+void setup_ivx(SDL_Window *w)
 {
+	setup(w);
 
 	struct AccuracyStruct accuracyData;
 	struct SystemInfoStruct systemData;
@@ -94,5 +144,32 @@ void setup_ivx(void)
 
 	iV_SetSampleCallback(update_gaze);
 }
+#else
+
+void setup_ivx(SDL_Window *w)
+{
+	setup(w);
+}
+
+/*
+int update_gaze(struct SampleStruct sampleData)
+{
+	int screen_x, screen_y;
+{
+	if (!gaze)
+		gaze = malloc(sizeof(gaze_struct))
+		pexit("gaze struct not initialized")
+
+	screen_x = (sampleData.leftEye.gazeX + sampleData.rightEye.gazeX) / 2;
+	screen_y = (sampleData.leftEye.gazeY + sampleData.rightEye.gazeY) / 2;
+
+	SDL_LockMutex(gaze->mutex);
+	gaze->
+
+	SDL_UnlockMutex(gaze->mutex);
+
+	return 0;
+}
+*/
 
 #endif
