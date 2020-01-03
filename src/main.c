@@ -33,8 +33,6 @@
 #ifdef ET
 #include "et.h"
 #include "iViewXAPI.h"
-gaze_struct *gaze;
-tracker_struct *tracker;
 #endif
 
 void display_usage(char *progname)
@@ -57,11 +55,11 @@ void event_loop(win_ctx *wc)
 
 	for (;;) {
 		/* check for events to handle, meanwhile just render frames */
-		if(frame_refresh(wc))
+		if (frame_refresh(wc))
 			break;
 
 		SDL_PumpEvents();
-		if(SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {
+		if (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {
 			switch (event.type) {
 			case SDL_KEYDOWN:
 				switch (event.key.keysym.sym) {
@@ -78,7 +76,6 @@ void event_loop(win_ctx *wc)
 int main(int argc, char **argv)
 {
 	char **paths;
-	float screen_width, screen_height; //physical display dimensions in mm
 	enc_id id;
 	rdr_ctx *rc;
 	dec_ctx *src_dc, *fov_dc;
@@ -92,22 +89,14 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	// FIXME: Hardcoded 15.6" 16:9 FHD notebook display dimensions
-	screen_width = 345;
-	screen_height = 194;
 	id = LIBX264;
-	id = LIBX265;
 
 	signal(SIGTERM, exit);
 	signal(SIGINT, exit);
 
-#ifdef ET
-	setup_ivx();
-#endif
-
 	paths = parse_lines(argv[1]);
-	wc = window_init(screen_width, screen_height);
-
+	wc = window_init();
+	setup_ivx(wc->window);
 
 	for (int i = 0; paths[i]; i++) {
 
