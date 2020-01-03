@@ -54,6 +54,7 @@ Queue *queue_init(size_t capacity)
 void queue_free(Queue **q)
 {
 	Queue *qd = *q;
+
 	SDL_DestroyMutex(qd->mutex);
 	SDL_DestroyCond(qd->full);
 	SDL_DestroyCond(qd->empty);
@@ -244,7 +245,7 @@ void reader_free(rdr_ctx **rc)
 	*rc = NULL;
 }
 
-win_ctx *window_init(float screen_width, float screen_height)
+win_ctx *window_init()
 {
 	win_ctx *wc;
 	SDL_Window *window;
@@ -276,8 +277,6 @@ win_ctx *window_init(float screen_width, float screen_height)
 		pexit("malloc failed");
 	wc->window = window;
 	wc->texture = NULL;
-	wc->screen_w = screen_width;
-	wc->screen_h = screen_height;
 	return wc;
 }
 
@@ -313,6 +312,7 @@ void realloc_texture(win_ctx *wc, AVFrame *frame)
 void center_rect(SDL_Rect *rect, win_ctx *wc, AVFrame *f)
 {
 	int win_w, win_h;
+
 	SDL_GetWindowSize(wc->window, &win_w, &win_h);
 	AVRational ratio = av_make_q(f->width, f->height); //aspect ratio
 
@@ -339,54 +339,59 @@ void center_rect(SDL_Rect *rect, win_ctx *wc, AVFrame *f)
 
 int frame_refresh(win_ctx *wc)
 {
-	AVFrame *frame;
-	SDL_Renderer *r = SDL_GetRenderer(wc->window);
+	AVFrame *f;
+	SDL_Renderer *ren;
 	SDL_Rect rect;
+
 	int64_t upts; // presentation time in micro seconds
 	int64_t uremaining; //remaining time in micro seconds
-	int64_t *encoder_timestamp;
+
+	int64_t *enc_time;//encoding time
+	int64_t now;
 	#ifdef DEBUG
-	int64_t delay;
+	int64_t delta;
 	#endif
 
-	SDL_SetRenderDrawColor(r, 0, 0, 0, 255);
-	SDL_RenderClear(r);
-
-	frame = queue_extract(wc->frames);
-	if (!frame)
+	f = queue_extract(wc->frames);
+	if (!f) {
+		printf("frame refresh returns 1\n");
 		return 1;
+	}
+	enc_time = queue_extract(wc->timestamps);
 
-	realloc_texture(wc, frame);
-	SDL_UpdateYUVTexture(wc->texture, NULL, frame->data[0], frame->linesize[0],
-									frame->data[1], frame->linesize[1],
-									frame->data[2], frame->linesize[2]);
 
-	center_rect(&rect, wc, frame);
-	SDL_RenderCopy(r, wc->texture, NULL, &rect);
+	ren = SDL_GetRenderer(wc->window);
+	SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
+	SDL_RenderClear(ren);
+	realloc_texture(wc, f);
+	SDL_UpdateYUVTexture(wc->texture, NULL,
+						f->data[0], f->linesize[0],
+						f->data[1], f->linesize[1],
+						f->data[2], f->linesize[2]);
+	center_rect(&rect, wc, f);
+	SDL_RenderCopy(ren, wc->texture, NULL, &rect);
+	now = av_gettime_relative();
 
-	//add an initial delay to avoid lags when upts == 0
+	//add an initial delay bc we won't be able to display at 0
 	if (wc->time_start == -1)
-		wc->time_start = av_gettime_relative() + 1000;
+		wc->time_start = now + 100000;
 
 	//XXX: why is the factor 2 here necessary? Can't find this in the docs, but it works consistently...
-	upts = (2 * 1000000 * frame->pts * wc->time_base.num) / wc->time_base.den;
-	uremaining = wc->time_start + upts - av_gettime_relative();
+	upts = (2 * 1000000 * f->pts * wc->time_base.num) / wc->time_base.den; //pts relative to zero
+	uremaining = wc->time_start + upts - now;
 
-	encoder_timestamp = queue_extract(wc->timestamps);
 	#ifdef DEBUG
-	delay = (av_gettime_relative() - *encoder_timestamp) / 1000000;
-	fprintf(stdout, "remaining: %ld upts: %ld, frame->pts %ld, num %d, den %d, time %ld, delay %ld\n",
-	uremaining, upts, frame->pts, wc->time_base.num, wc->time_base.den, av_gettime_relative(), delay);
+	delta = now - *enc_time;
+	printf("rem: %ld, upts: %ld, now: %ld, delta: %ld\n", uremaining , upts, now, delta);
 	#endif
-	free(encoder_timestamp);
 
 	if (uremaining > 0)
 		av_usleep(uremaining);
 	else
 		pexit("presentation lag");
 
-	SDL_RenderPresent(r);
-
+	SDL_RenderPresent(ren);
+	free(enc_time);
 	return 0;
 }
 
