@@ -54,8 +54,6 @@ typedef struct win_ctx {
 	Queue *timestamps;
 	SDL_Window *window;
 	SDL_Texture *texture;
-	float screen_w;
-	float screen_h;
 	int64_t time_start;
 	AVRational time_base;
 } win_ctx;
@@ -192,11 +190,9 @@ void reader_free(rdr_ctx **rc);
  * to an AVFrame through the realloc_texture function!
  *
  * Calls pexit in case of a failure.
- * @param screen_width physical screen width in mm
- * @param screen_height physical screen height in mm
  * @return window_context with initialized defaults
  */
-win_ctx *window_init(float screen_width, float screen_height);
+win_ctx *window_init();
 
 /**
  * (Re)allocate a the texture member of a window_context
@@ -233,4 +229,3 @@ void center_rect(SDL_Rect *rect, win_ctx *w_ctx, AVFrame *f);
  * @return 0 on success, 1 if the frame_queue is drained (returned NULL).
  */
 int frame_refresh(win_ctx *w_ctx);
-
