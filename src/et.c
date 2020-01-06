@@ -52,7 +52,7 @@ float *foveation_descriptor()
 	return fd;
 }
 
-static void setup(SDL_Window *w)
+static void common_setup(SDL_Window *w)
 {
 	win = w;
 
@@ -121,7 +121,7 @@ int __stdcall update_gaze(struct SampleStruct sampleData)
 
 void setup_ivx(SDL_Window *w)
 {
-	setup(w);
+	common_setup(w);
 
 	struct AccuracyStruct accuracyData;
 	struct SystemInfoStruct systemData;
@@ -180,7 +180,7 @@ void setup_ivx(SDL_Window *w)
 
 void setup_ivx(SDL_Window *w)
 {
-	setup(w);
+	common_setup(w);
 }
 
 /*
