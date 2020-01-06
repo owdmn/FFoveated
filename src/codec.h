@@ -116,3 +116,12 @@ dec_ctx *fov_decoder_init(enc_ctx *ec);
  * @param dc decoder context to be freed.
  */
 void decoder_free(dec_ctx **dc);
+
+/**
+ * Allocate a parameter struct, sett codec-dependent upper and lower bounds
+ * for qp delta and the standarddeviation
+ *
+ * @param id codec id to assign limit values for
+ * @return params* with initialized min/max values depending on the coded
+ */
+params *params_limit_init(enc_id id);

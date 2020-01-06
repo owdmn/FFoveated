@@ -313,3 +313,24 @@ void decoder_free(dec_ctx **dc)
 	free(d);
 	*dc = NULL;
 }
+
+params *params_limit_init(enc_id id)
+{
+	params *p;
+
+	p = malloc(sizeof(params));
+	if (!p)
+		pexit("malloc failed");
+
+	switch (id) {
+	case LIBX264:
+		p->delta_min = 0;
+		p->delta_max = 51;
+		p->std_min = 0;
+		p->std_max = 2;
+		break;
+	default:
+		pexit("requested params for unsupported codec");
+	}
+	return p;
+}
