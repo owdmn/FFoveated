@@ -18,6 +18,8 @@
 #pragma once
 
 #include <SDL2/SDL.h>
+#include "common.h"
+#include "codec.h"
 #include "io.h"
 #ifdef ET
 #include <iViewXAPI.h>

@@ -19,15 +19,9 @@
 
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>
+#include "common.h"
 #include "io.h"
 #include "et.h"
-
-// ids to identify supported codecs
-typedef enum {
-	LIBX264,
-	LIBX265,
-	LIBVPX,
-} enc_id;
 
 /**
  * Decoder context / status information.
