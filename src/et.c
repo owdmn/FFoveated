@@ -20,7 +20,7 @@
 static gaze *gs;
 static lab_setup *ls;
 static SDL_Window *win;
-
+static params *p;
 
 float *foveation_descriptor()
 {
@@ -50,27 +50,6 @@ float *foveation_descriptor()
 	fd[3] = 50;
 	#endif
 	return fd;
-}
-
-static void common_setup(SDL_Window *w)
-{
-	win = w;
-
-	gs = malloc(sizeof(gaze));
-	if (!gs)
-		pexit("malloc failed");
-
-	ls = malloc(sizeof(lab_setup));
-	if (!ls)
-		pexit("malloc failed");
-
-	// Hardcoded 15.6" 16:9 FHD notebook display dimensions
-	ls->screen_width = 345;
-	ls->screen_height = 194;
-	ls->camera_x = 0;
-	ls->camera_z = 0;
-	ls->camera_inclination = 20; //degrees upward for the SMI bracket
-	gs->mutex = SDL_CreateMutex();
 }
 
 #ifdef ET
@@ -118,10 +97,31 @@ int __stdcall update_gaze(struct SampleStruct sampleData)
 	//SDL_UnlockMutex(gs->mutex);
 	return 0;
 }
+#endif
 
-void setup_ivx(SDL_Window *w)
+void setup_ivx(SDL_Window *w, enc_id id)
 {
-	common_setup(w);
+
+	// common setup for ET and non-ET applications
+	win = w;
+	gs = malloc(sizeof(gaze));
+	if (!gs)
+		pexit("malloc failed");
+
+	ls = malloc(sizeof(lab_setup));
+	if (!ls)
+		pexit("malloc failed");
+
+	// Hardcoded 15.6" 16:9 FHD notebook display dimensions
+	ls->screen_width = 345;
+	ls->screen_height = 194;
+	ls->camera_x = 0;
+	ls->camera_z = 0;
+	ls->camera_inclination = 20; //degrees upward for the SMI bracket
+	gs->mutex = SDL_CreateMutex();
+	p = params_limit_init(id);
+
+	#ifdef ET
 
 	struct AccuracyStruct accuracyData;
 	struct SystemInfoStruct systemData;
@@ -175,33 +175,5 @@ void setup_ivx(SDL_Window *w)
 		pexit("malloc failed");
 
 	iV_SetSampleCallback(update_gaze);
+	#endif
 }
-#else
-
-void setup_ivx(SDL_Window *w)
-{
-	common_setup(w);
-}
-
-/*
-int update_gaze(struct SampleStruct sampleData)
-{
-	int screen_x, screen_y;
-{
-	if (!gaze)
-		gaze = malloc(sizeof(gaze_struct))
-		pexit("gaze struct not initialized")
-
-	screen_x = (sampleData.leftEye.gazeX + sampleData.rightEye.gazeX) / 2;
-	screen_y = (sampleData.leftEye.gazeY + sampleData.rightEye.gazeY) / 2;
-
-	SDL_LockMutex(gaze->mutex);
-	gaze->
-
-	SDL_UnlockMutex(gaze->mutex);
-
-	return 0;
-}
-*/
-
-#endif

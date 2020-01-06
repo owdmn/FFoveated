@@ -25,7 +25,6 @@
 #include <iViewXAPI.h>
 #endif
 
-
 /* Data to be set as REDGeometryStruct */
 typedef struct lab_setup {
 	double screen_width; // in mm mm
@@ -53,8 +52,13 @@ typedef struct gaze {
 	SDL_mutex *mutex;
 } gaze;
 
-
-void setup_ivx(SDL_Window *w);
+/**
+ * Setup eye-tracking (or pseudo-foveation)
+ *
+ * @param w SDL_Window, used for mouse-based pseudofoveation
+ * @param id codec id to infer parameters
+ */
+void setup_ivx(SDL_Window *w, enc_id id);
 
 /**
  * Allocate a foveation descriptor to pass to an encoder as AVSideData
