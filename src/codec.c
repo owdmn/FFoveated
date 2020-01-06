@@ -37,7 +37,7 @@ static void set_codec_options(AVDictionary **opt, enc_id id)
 	}
 }
 
-enc_ctx *encoder_init(enc_id id, dec_ctx *dc, win_ctx *wc)
+enc_ctx *encoder_init(enc_id id, dec_ctx *dc)
 {
 	enc_ctx *ec;
 	AVCodecContext *avctx;
@@ -83,7 +83,6 @@ enc_ctx *encoder_init(enc_id id, dec_ctx *dc, win_ctx *wc)
 
 	ec->avctx = avctx;
 	ec->options = options;
-	ec->wc = wc;
 	ec->id = id;
 
 	return ec;
@@ -148,7 +147,7 @@ int encoder_thread(void *ptr)
 			sd = av_frame_new_side_data(frame, AV_FRAME_DATA_FOVEATION_DESCRIPTOR, descr_size);
 			if (!sd)
 				pexit("side data allocation failed");
-			descr = foveation_descriptor(ec->wc);
+			descr = foveation_descriptor();
 			sd->data = (uint8_t *) descr;
 
 			frame->pict_type = 0; //keep undefined to prevent warnings
@@ -176,34 +175,6 @@ int encoder_thread(void *ptr)
 	return 0;
 }
 
-float *foveation_descriptor(win_ctx *wc)
-{
-	float *fd;
-	int x, y, w, h;
-
-	SDL_GetMouseState(&x, &y);
-	SDL_GetWindowSize(wc->window, &w, &h);
-
-	fd = malloc(4*sizeof(float));
-	if (!fd)
-		pexit("malloc failed");
-
-	#ifdef ET
-	// eye-tracking
-	fd[0] =
-	fd[1] =
-	fd[2] =
-	fd[3] =
-
-	#else
-	// fake mouse motion dummy values
-	fd[0] = (float) x / w;
-	fd[1] = (float) y / h;
-	fd[2] = 0.3;
-	fd[3] = 20;
-	#endif
-	return fd;
-}
 
 dec_ctx *source_decoder_init(rdr_ctx *rc, int queue_capacity)
 {

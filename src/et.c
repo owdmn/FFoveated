@@ -17,9 +17,40 @@
 
 #include "et.h"
 
-gaze *gs;
-lab_setup *ls;
-SDL_Window *win;
+static gaze *gs;
+static lab_setup *ls;
+static SDL_Window *win;
+
+
+float *foveation_descriptor()
+{
+	float *fd;
+	int x, y, w, h;
+
+	fd = malloc(4*sizeof(float));
+	if (!fd)
+		pexit("malloc failed");
+
+	#ifdef ET
+	// eye-tracking
+	fd[0] =
+	fd[1] =
+	fd[2] =
+	fd[3] =
+
+	#else
+	// fake mouse motion dummy values
+
+	SDL_GetMouseState(&x, &y);
+	SDL_GetWindowSize(win, &w, &h);
+
+	fd[0] = (float) x / w;
+	fd[1] = (float) y / h;
+	fd[2] = 0.3;
+	fd[3] = 50;
+	#endif
+	return fd;
+}
 
 static void setup(SDL_Window *w)
 {

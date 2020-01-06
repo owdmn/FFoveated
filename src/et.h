@@ -53,3 +53,11 @@ typedef struct gaze {
 
 
 void setup_ivx(SDL_Window *w);
+
+/**
+ * Allocate a foveation descriptor to pass to an encoder as AVSideData
+ *
+ * @param wc required for pseudo-foveation through the mouse pointer.
+ * @return float* 4-tuple: x and y coordinate, stddev and max quality offset
+ */
+float *foveation_descriptor();

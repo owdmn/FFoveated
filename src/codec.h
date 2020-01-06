@@ -51,7 +51,6 @@ typedef struct enc_ctx {
 	Queue *timestamps; //timestamps to measure encoding-decoding-display lag
 	AVCodecContext *avctx;
 	AVDictionary *options; //encoder options
-	win_ctx *wc; //required for fake-foveation using the mouse pointer
 	enc_id id;
 } enc_ctx;
 
@@ -64,9 +63,8 @@ typedef struct enc_ctx {
  * @param id identifies the encoder to use.
  * @param dc context of the decoder which supplies the frames, to set e.g. the time base.
  * @param w_ctx window context, necessary for pseudo-gaze emulation through the mouse pointer.
- * @return enc_ctx with fields initialized and an opened encoder
  */
-enc_ctx *encoder_init(enc_id id, dec_ctx *dc, win_ctx *wc);
+enc_ctx *encoder_init(enc_id id, dec_ctx *dc);
 
 /**
  * Free the encoder context and associated data.
@@ -86,14 +84,6 @@ void encoder_free(enc_ctx **ec);
  * @return int 0 on success
  */
 int encoder_thread(void *ptr);
-
-/**
- * Allocate a foveation descriptor to pass to an encoder as AVSideData
- *
- * @param wc required for pseudo-foveation through the mouse pointer.
- * @return float* 4-tuple: x and y coordinate, stddev and max quality offset
- */
-float *foveation_descriptor(win_ctx *wc);
 
 /**
  * Initialize a source decoder.
