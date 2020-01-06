@@ -96,13 +96,13 @@ int main(int argc, char **argv)
 
 	paths = parse_lines(argv[1]);
 	wc = window_init();
-	setup_ivx(wc->window);
+	setup_ivx(wc->window, id);
 
 	for (int i = 0; paths[i]; i++) {
 
 		rc = reader_init(paths[i], queue_capacity);
 		src_dc = source_decoder_init(rc, queue_capacity);
-		ec = encoder_init(id, src_dc, wc);
+		ec = encoder_init(id, src_dc);
 		fov_dc = fov_decoder_init(ec);
 
 		reader = SDL_CreateThread(reader_thread, "reader", rc);
