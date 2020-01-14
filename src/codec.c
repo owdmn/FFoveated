@@ -23,13 +23,13 @@ static void set_codec_options(AVDictionary **opt, enc_id id)
 	case LIBX264:
 		av_dict_set(opt, "preset", "ultrafast", 0);
 		av_dict_set(opt, "tune", "zerolatency", 0);
-		av_dict_set(opt, "aq-mode", "autovariance", 0);
+		av_dict_set(opt, "aq-mode", "1", 0);
 		av_dict_set(opt, "gop-size", "3", 0);
 		break;
 	case LIBX265:
 		av_dict_set(opt, "preset", "ultrafast", 0);
 		av_dict_set(opt, "tune", "zerolatency", 0);
-		av_dict_set(opt, "x265-params", "aq-mode=2", 0); //autovariance
+		av_dict_set(opt, "x265-params", "aq-mode=1", 0);
 		av_dict_set(opt, "gop-size", "3", 0);
 		break;
 	default:
