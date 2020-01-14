@@ -25,7 +25,11 @@ static params *p;
 float *foveation_descriptor()
 {
 	float *fd;
-	int x, y, w, h;
+	int x, y;
+	int win_x, win_y, w, h;
+
+	SDL_GetWindowSize(win, &w, &h);
+	SDL_GetWindowPosition(win, &win_x, &win_y);
 
 	fd = malloc(4*sizeof(float));
 	if (!fd)
@@ -33,16 +37,17 @@ float *foveation_descriptor()
 
 	#ifdef ET
 	// eye-tracking
-	fd[0] =
-	fd[1] =
-	fd[2] =
-	fd[3] =
+	x = (float) (gs->gazeX_mean - win_x) / w;
+	y = (float) (gs->gazeY_mean - win_y) / h;
+
+	fd[0] = x;
+	fd[1] = y;
+	fd[2] = 0.3;
+	fd[3] = 40;
 
 	#else
 	// fake mouse motion dummy values
-
 	SDL_GetMouseState(&x, &y);
-	SDL_GetWindowSize(win, &w, &h);
 
 	fd[0] = (float) x / w;
 	fd[1] = (float) y / h;
@@ -61,7 +66,7 @@ int __stdcall update_gaze(struct SampleStruct sampleData)
 	mean_y = (sampleData.leftEye.gazeY + sampleData.rightEye.gazeY) / 2;
 	*/
 	double x, y, z; //mean eye coordinates for distance
-	double theta;
+	//double theta;
 
 	SDL_LockMutex(gs->mutex);
 	gs->left.x = sampleData.leftEye.eyePositionX;
@@ -70,6 +75,10 @@ int __stdcall update_gaze(struct SampleStruct sampleData)
 	gs->right.x = sampleData.rightEye.eyePositionX;
 	gs->right.y = sampleData.rightEye.eyePositionY;
 	gs->right.z = sampleData.rightEye.eyePositionZ;
+	gs->right.gazeX = sampleData.rightEye.gazeX;
+	gs->left.gazeX = sampleData.leftEye.gazeX;
+	gs->right.gazeY = sampleData.rightEye.gazeY;
+	gs->left.gazeY = sampleData.leftEye.gazeY;
 
 	gs->left.diam = sampleData.leftEye.diam;
 	gs->right.diam = sampleData.rightEye.diam;
@@ -79,20 +88,20 @@ int __stdcall update_gaze(struct SampleStruct sampleData)
 	y = (gs->left.y + gs->right.y) / 2;
 	z = (gs->left.z + gs->right.z) / 2;
 
-	theta = ls->camera_inclination;
+	gs->gazeX_mean = (gs->left.gazeX + gs->right.gazeX) / 2;
+	gs->gazeY_mean = (gs->left.gazeY + gs->right.gazeY) / 2;
 
+	//theta = ls->camera_inclination;
 
-	//FIXME: Need to know the sign of these coordinate systems
 
 	//shift + rotate to map camera coordinates to screen-specific 3d coordinates
 	//calculate screen pixel coordinates in 3d space
 	//calculate distance
 
-	//gs->distance =
+	// distance towards eyetracker, not screen!!!
+	gs->distance = sqrt(x*x + y*y + z*z);
 
-	gs->x = mean_x;
-	gs->y = mean_y;
-	//gs->distance = sampleData.leftEye.
+	SDL_UnlockMutex(gs->mutex);
 
 	//SDL_UnlockMutex(gs->mutex);
 	return 0;
@@ -164,15 +173,11 @@ void setup_ivx(SDL_Window *w, enc_id id)
 	calibrationData.autoAccept = 2;
 	calibrationData.targetSize = 20;
 	calibrationData.visualization = 1;
-	strcpy_s(calibrationData.targetFilename, 256, "");
+	strncpy(calibrationData.targetFilename, "", 256); 
 
 	iV_SetupCalibration(&calibrationData);
 	// start calibration
 	ret_calibrate = iV_Calibrate();
-
-	gaze = malloc(sizeof(gaze_struct));
-	if (!gaze)
-		pexit("malloc failed");
 
 	iV_SetSampleCallback(update_gaze);
 	#endif

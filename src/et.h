@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <math.h>
 #include <SDL2/SDL.h>
 #include "common.h"
 #include "codec.h"
@@ -44,8 +45,8 @@ typedef struct eye_data {
 } eye_data;
 
 typedef struct gaze {
-	int mean_x;
-	int mean_y;
+	int gazeX_mean;
+	int gazeY_mean;
 	eye_data left;
 	eye_data right;
 	double distance; //mean eye-screen distance
