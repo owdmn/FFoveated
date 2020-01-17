@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <limits.h>
+#include <linux/limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <SDL2/SDL.h>
