@@ -46,6 +46,7 @@ typedef struct rdr_ctx {
 	int stream_index;
 	Queue *packets;
 	AVFormatContext *fctx;
+	int abort;
 } rdr_ctx;
 
 // Passed to window_thread through SDL_CreateThread
