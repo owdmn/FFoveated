@@ -75,6 +75,11 @@ void event_loop()
 				switch (event.key.keysym.sym) {
 				case SDLK_q:
 					pexit("q pressed");
+					break;
+				case SDLK_SPACE:
+					fprintf(stderr, "space pressed\n");
+					c.rc->abort = 1;
+					break;
 			}
 			break;
 			}

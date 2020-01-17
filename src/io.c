@@ -167,6 +167,11 @@ int reader_thread(void *ptr)
 	AVPacket *pkt;
 
 	while (1) {
+		if(rc->abort) {
+			printf("exiting reader loop");
+			break;
+		}
+
 		pkt = malloc(sizeof(AVPacket));
 		if (!pkt)
 			pexit("malloc failed");
