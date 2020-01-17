@@ -63,6 +63,8 @@ void event_loop()
 	if (c.wc->time_start != -1)
 		pexit("Error: call set_timing first");
 
+	c.rc->abort = 0;
+
 	for (;;) {
 		/* check for events to handle, meanwhile just render frames */
 		if (frame_refresh(c.wc))
