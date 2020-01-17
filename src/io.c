@@ -342,6 +342,19 @@ void center_rect(SDL_Rect *rect, win_ctx *wc, AVFrame *f)
 	}
 }
 
+void flush_window_source(win_ctx *wc)
+{
+	void *p;
+	AVFrame *f;
+
+	while ((p = queue_extract(wc->timestamps)))
+		free(p);
+	queue_free(&wc->timestamps);
+	while((f = queue_extract(wc->frames)))
+		av_frame_free(&f);
+	queue_free(&wc->frames);
+}
+
 int frame_refresh(win_ctx *wc)
 {
 	AVFrame *f;
