@@ -244,7 +244,6 @@ void reader_free(rdr_ctx **rc)
 
 	r = *rc;
 	free(r->filename);
-	queue_free(&r->packets);
 	avformat_free_context(r->fctx);
 	free(*rc);
 	*rc = NULL;
