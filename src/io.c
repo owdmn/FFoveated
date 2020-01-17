@@ -396,6 +396,7 @@ int frame_refresh(win_ctx *wc)
 		pexit("presentation lag");
 
 	SDL_RenderPresent(ren);
+	av_frame_free(&f);
 	free(enc_time);
 	return 0;
 }
