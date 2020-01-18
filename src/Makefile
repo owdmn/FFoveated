@@ -22,7 +22,7 @@ debug: main
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 
-main: io.o codec.o et.o main.o
+main: io.o codec.o et.o main.o pexit.o queue.o window.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 checkpatch:

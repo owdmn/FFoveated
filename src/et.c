@@ -61,11 +61,6 @@ float *foveation_descriptor()
 #ifdef ET
 int __stdcall update_gaze(struct SampleStruct sampleData)
 {
-	/*
-	int mean_x, mean_y;
-	mean_x = (sampleData.leftEye.gazeX + sampleData.rightEye.gazeX) / 2;
-	mean_y = (sampleData.leftEye.gazeY + sampleData.rightEye.gazeY) / 2;
-	*/
 	double x, y, z; //mean eye coordinates for distance
 	//double theta;
 
@@ -174,7 +169,7 @@ void setup_ivx(SDL_Window *w, enc_id id)
 	calibrationData.autoAccept = 2;
 	calibrationData.targetSize = 20;
 	calibrationData.visualization = 1;
-	strncpy(calibrationData.targetFilename, "", 256); 
+	strncpy(calibrationData.targetFilename, "", 256);
 
 	iV_SetupCalibration(&calibrationData);
 	// start calibration

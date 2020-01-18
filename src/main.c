@@ -18,6 +18,7 @@
 #include "io.h"
 #include "codec.h"
 #include "pexit.h"
+#include "window.h"
 #include <inttypes.h>
 #include <limits.h>
 #include <math.h>
@@ -57,7 +58,7 @@ void display_usage(char *progname)
  * Calls pexit in case of a failure.
  * @param w_ctx window_context to which rendering and event handling applies.
  */
-void event_loop()
+void event_loop(void)
 {
 	SDL_Event event;
 
@@ -94,7 +95,6 @@ void event_loop()
 int main(int argc, char **argv)
 {
 	char **paths;
-	enc_id id;
 
 	SDL_Thread *reader, *src_decoder, *encoder, *fov_decoder;
 	const int queue_capacity = 32;
@@ -104,20 +104,18 @@ int main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 
-	id = LIBX264;
-
 	signal(SIGTERM, exit);
 	signal(SIGINT, exit);
 
 	paths = parse_lines(argv[1]);
 	c.wc = window_init();
-	setup_ivx(c.wc->window, id);
+	setup_ivx(c.wc->window, LIBX264);
 
 	for (int i = 0; paths[i]; i++) {
 
 		c.rc = reader_init(paths[i], queue_capacity);
 		c.src_dc = source_decoder_init(c.rc, queue_capacity);
-		c.ec = encoder_init(id, c.src_dc);
+		c.ec = encoder_init(LIBX264, c.src_dc);
 		c.fov_dc = fov_decoder_init(c.ec);
 
 		reader = SDL_CreateThread(reader_thread, "reader", c.rc);
@@ -126,7 +124,7 @@ int main(int argc, char **argv)
 		fov_decoder = SDL_CreateThread(decoder_thread, "fov_decoder", c.fov_dc);
 
 		set_window_source(c.wc, c.fov_dc->frames, c.ec->timestamps, c.src_dc->avctx->time_base);
-		event_loop(&c);
+		event_loop();
 
 		SDL_WaitThread(reader, NULL);
 		printf("here\n");

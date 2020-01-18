@@ -29,15 +29,7 @@ typedef struct rdr_ctx {
 	int abort;
 } rdr_ctx;
 
-// Passed to window_thread through SDL_CreateThread
-typedef struct win_ctx {
-	Queue *frames;
-	Queue *timestamps;
-	SDL_Window *window;
-	SDL_Texture *texture;
-	int64_t time_start;
-	AVRational time_base;
-} win_ctx;
+
 
 /**
  * Parse a file line by line.
@@ -76,25 +68,6 @@ void free_lines(char ***lines);
 int reader_thread(void *ptr);
 
 /**
- * Update a window in order to display a new input video.
- *
- * Set frame and timestamp queues, set the time_base to match the new input videos
- * time_base and set the start_time to -1.
- * @param wc window context to update
- * @param frames new input queue for frames to be displayed
- * @param timestamps new encoder timestamp queue
- * @param time_base new time base to display frames at correct pts
- */
-void set_window_source(win_ctx *wc, Queue *frames, Queue *timestamps, AVRational time_base);
-
-/**
- * Empty and free all associated window input queues.
- *
- * @param wc window context to flush
- */
-void flush_window_source(win_ctx *wc);
-
-/**
  * Create and initialize a reader context.
  *
  * Open and demultiplex the file given in reader_ctx->filename.
@@ -115,51 +88,3 @@ rdr_ctx *reader_init(char *filename, int queue_capacity);
  * @param r_ctx reader context to be freed.
  */
 void reader_free(rdr_ctx **rc);
-
-/**
- * Create and initialize a window_context.
- *
- * Initialize SDL, create a window, create a renderer for the window.
- * The texture member is initialized to NULL and has to be handled with respect
- * to an AVFrame through the realloc_texture function!
- *
- * Calls pexit in case of a failure.
- * @return window_context with initialized defaults
- */
-win_ctx *window_init();
-
-/**
- * (Re)allocate a the texture member of a window_context
- *
- * If no existing texture is present, create a suitably sized one.
- * If the existing texture and the new frame to be rendered agree in dimensions,
- * leave the texture unmodified and return. If they disagree, destroy the old
- * texture and create a suitable one instead.
- * Calls pexit in case of a failure
- * @param w_ctx window context whose texture member is being updated.
- * @param frame frame to be rendered to the texture.
- */
-void realloc_texture(win_ctx *wc, AVFrame *frame);
-
-/**
- * Calculate a centered rectangle within a window with a suitable aspect ratio.
- *
- * In order to display a frame in a window with unsuitable aspect ratio,
- * we render the frame to a centered rectangle with correct aspect ratio.
- * Empty areas will be filled with black bars.
- * @param rect will be modified to fit the desired aspect ratio in the window.
- * @param w_ctx window_context, read width and height of the window
- * @param f AVFrame to be displayed
- */
-void center_rect(SDL_Rect *rect, win_ctx *w_ctx, AVFrame *f);
-
-/**
- * Display the next frame in the queue to the window.
- *
- * Dequeue the next frame from w_ctx->frame_queue, render it to w_ctx->window
- * in a centered rectangle, adding black bars for undefined regions.
- *
- * @param w_ctx supplying the window and frame_queue
- * @return 0 on success, 1 if the frame_queue is drained (returned NULL).
- */
-int frame_refresh(win_ctx *w_ctx);
