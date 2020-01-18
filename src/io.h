@@ -177,7 +177,9 @@ void set_window_source(win_ctx *wc, Queue *frames, Queue *timestamps, AVRational
 rdr_ctx *reader_init(char *filename, int queue_capacity);
 
 /**
- * Free the reader_context and all allocated resources,
+ * Free the reader_context and all private resources.
+ * The output queue is not freed! The receiver has to take
+ * care of this.
  * set r-ctx to NULL.
  * @param r_ctx reader context to be freed.
  */
