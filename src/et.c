@@ -16,6 +16,7 @@
  */
 
 #include "et.h"
+#include "pexit.h"
 
 static gaze *gs;
 static lab_setup *ls;

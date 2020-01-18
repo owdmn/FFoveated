@@ -17,11 +17,11 @@
 
 #pragma once
 
-#include <libavformat/avformat.h>
-#include <libavutil/time.h>
 #include "common.h"
 #include "io.h"
 #include "et.h"
+#include <libavformat/avformat.h>
+#include <libavutil/time.h>
 
 /**
  * Decoder context / status information.

@@ -17,28 +17,8 @@
 
 #pragma once
 
-#include <linux/limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <SDL2/SDL.h>
+#include "queue.h"
 #include <libavformat/avformat.h>
-#include <libavutil/time.h>
-
-/**
- * Container for a generic queue and associated metadata.
- *
- * Signalling is implemented by having data[rear] always point to an
- * unused location, therefore capacity+1 elements have to be allocated.
- */
-typedef struct Queue {
-	void **data;
-	size_t capacity;
-	unsigned int front;
-	unsigned int rear;
-	SDL_mutex *mutex;
-	SDL_cond *full;
-	SDL_cond *empty;
-} Queue;
 
 // Passed to reader_thread through SDL_CreateThread
 typedef struct rdr_ctx {
@@ -58,62 +38,6 @@ typedef struct win_ctx {
 	int64_t time_start;
 	AVRational time_base;
 } win_ctx;
-
-/**
- * Print formatted error message referencing the affeted source file,
- * line and the errno status through perror (3), then exit with EXIT_FAILURE.
- * Likely used through the pexit macro for comfort.
- *
- * @param msg error message
- * @param file usually the __FILE__ macro
- * @param line usually the __LINE__ macro
- */
-void pexit_(const char *msg, const char *file, const int line);
-
-/**
- * Convenience macro to report runtime errors with debug information.
- */
-#define pexit(s) pexit_(s, __FILE__, __LINE__)
-
-/**
- * Create and initialize a queue structure.
- *
- * Allocates storage on the heap.
- * Use free_queue to dispose of pointers acquired through this function.
- * @param capacity number of elements the queue is able to store.
- * @return initialized queue. See enqueue, dequeue, free_queue.
- */
-Queue *queue_init(size_t capacity);
-
-/**
- * Free a Queue.
- *
- * The mutex and the full/empty condition variables are destroyed.
- * Calls free on both q->data and subsequently q itself, which is set to NULL.
- * This function does not take care of any remaining elements in the queue!
- * These have to be handled manually. Caution: This can lead to data leaks.
- */
-void queue_free(Queue **q);
-
-/**
- * Add data to end of the queue.
- *
- * Blocks if there is no space left, waiting for a signal on the full condition variable.
- * @param q Queue acquired through queue_init.
- * @param data will be appended to q->data.
- */
-void queue_append(Queue *q, void *data);
-
-/**
- * Extract the first element of a queue.
- *
- * Blocks if there is no element in q, waiting for a signal on the empty condition variable.
- * Pointers are not safely removed from the queue (not overwritten) and might still be
- * accessible at a later point in time.
- * @param q pointer to a valid Queue acquired through queue_init.
- * @return void* the first element of q.
- */
-void *queue_extract(Queue *q);
 
 /**
  * Parse a file line by line.

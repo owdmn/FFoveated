@@ -16,6 +16,7 @@
  */
 
 #include "codec.h"
+#include "pexit.h"
 
 static void set_codec_options(AVDictionary **opt, enc_id id)
 {

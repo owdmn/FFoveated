@@ -15,6 +15,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "io.h"
+#include "codec.h"
+#include "pexit.h"
 #include <inttypes.h>
 #include <limits.h>
 #include <math.h>
@@ -27,8 +30,6 @@
 #include <libavformat/avformat.h>
 #include <libavutil/time.h>
 #include <libavutil/frame.h>
-#include "io.h"
-#include "codec.h"
 
 #ifdef ET
 #include "et.h"
