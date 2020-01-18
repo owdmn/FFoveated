@@ -37,15 +37,10 @@
 #include "iViewXAPI.h"
 #endif
 
-typedef struct {
-	rdr_ctx *rc;
-	dec_ctx *src_dc, *fov_dc;
-	enc_ctx *ec;
-	win_ctx *wc;
-} ctx;
-
-ctx c;
-
+rdr_ctx *rc;
+dec_ctx *src_dc, *fov_dc;
+enc_ctx *ec;
+win_ctx *wc;
 
 void display_usage(char *progname)
 {
@@ -62,14 +57,14 @@ void event_loop(void)
 {
 	SDL_Event event;
 
-	if (c.wc->time_start != -1)
+	if (wc->time_start != -1)
 		pexit("Error: call set_timing first");
 
-	c.rc->abort = 0;
+	rc->abort = 0;
 
 	for (;;) {
 		/* check for events to handle, meanwhile just render frames */
-		if (frame_refresh(c.wc))
+		if (frame_refresh(wc))
 			break;
 
 		SDL_PumpEvents();
@@ -82,7 +77,7 @@ void event_loop(void)
 					break;
 				case SDLK_SPACE:
 					fprintf(stderr, "space pressed\n");
-					c.rc->abort = 1;
+					rc->abort = 1;
 					break;
 			}
 			break;
@@ -108,22 +103,22 @@ int main(int argc, char **argv)
 	signal(SIGINT, exit);
 
 	paths = parse_lines(argv[1]);
-	c.wc = window_init();
-	setup_ivx(c.wc->window, LIBX264);
+	wc = window_init();
+	setup_ivx(wc->window, LIBX264);
 
 	for (int i = 0; paths[i]; i++) {
 
-		c.rc = reader_init(paths[i], queue_capacity);
-		c.src_dc = source_decoder_init(c.rc, queue_capacity);
-		c.ec = encoder_init(LIBX264, c.src_dc);
-		c.fov_dc = fov_decoder_init(c.ec);
+		rc = reader_init(paths[i], queue_capacity);
+		src_dc = source_decoder_init(rc, queue_capacity);
+		ec = encoder_init(LIBX264, src_dc);
+		fov_dc = fov_decoder_init(ec);
 
-		reader = SDL_CreateThread(reader_thread, "reader", c.rc);
-		src_decoder = SDL_CreateThread(decoder_thread, "src_decoder", c.src_dc);
-		encoder = SDL_CreateThread(encoder_thread, "encoder", c.ec);
-		fov_decoder = SDL_CreateThread(decoder_thread, "fov_decoder", c.fov_dc);
+		reader = SDL_CreateThread(reader_thread, "reader", rc);
+		src_decoder = SDL_CreateThread(decoder_thread, "src_decoder", src_dc);
+		encoder = SDL_CreateThread(encoder_thread, "encoder", ec);
+		fov_decoder = SDL_CreateThread(decoder_thread, "fov_decoder", fov_dc);
 
-		set_window_source(c.wc, c.fov_dc->frames, c.ec->timestamps, c.src_dc->avctx->time_base);
+		set_window_source(wc, fov_dc->frames, ec->timestamps, src_dc->avctx->time_base);
 		event_loop();
 
 		SDL_WaitThread(reader, NULL);
@@ -132,10 +127,10 @@ int main(int argc, char **argv)
 		SDL_WaitThread(encoder, NULL);
 		SDL_WaitThread(fov_decoder, NULL);
 
-		decoder_free(&c.fov_dc);
-		encoder_free(&c.ec);
-		decoder_free(&c.src_dc);
-		reader_free(&c.rc);
+		decoder_free(&fov_dc);
+		encoder_free(&ec);
+		decoder_free(&src_dc);
+		reader_free(&rc);
 	}
 
 	free_lines(&paths);
