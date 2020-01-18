@@ -164,6 +164,13 @@ int reader_thread(void *ptr);
 void set_window_source(win_ctx *wc, Queue *frames, Queue *timestamps, AVRational time_base);
 
 /**
+ * Empty and free all associated window input queues.
+ *
+ * @param wc window context to flush
+ */
+void flush_window_source(win_ctx *wc);
+
+/**
  * Create and initialize a reader context.
  *
  * Open and demultiplex the file given in reader_ctx->filename.

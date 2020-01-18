@@ -51,6 +51,14 @@ Queue *queue_init(size_t capacity)
 	return q;
 }
 
+/*
+static void queue_flush(Queue *q, void (*free_fkt)(void *))
+{
+
+}
+*/
+
+
 void queue_free(Queue **q)
 {
 	Queue *qd = *q;
