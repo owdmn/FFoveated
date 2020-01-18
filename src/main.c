@@ -122,7 +122,6 @@ int main(int argc, char **argv)
 		event_loop();
 
 		SDL_WaitThread(reader, NULL);
-		printf("here\n");
 		SDL_WaitThread(src_decoder, NULL);
 		SDL_WaitThread(encoder, NULL);
 		SDL_WaitThread(fov_decoder, NULL);
