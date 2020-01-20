@@ -60,15 +60,13 @@ void event_loop(void)
 	if (wc->time_start != -1)
 		pexit("Error: call set_timing first");
 
-	rc->abort = 0;
-
 	for (;;) {
 		/* check for events to handle, meanwhile just render frames */
 		if (frame_refresh(wc))
 			break;
 
 		SDL_PumpEvents();
-		if (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {
+		while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {
 			switch (event.type) {
 			case SDL_KEYDOWN:
 				switch (event.key.keysym.sym) {
@@ -76,21 +74,22 @@ void event_loop(void)
 					pexit("q pressed");
 					break;
 				case SDLK_SPACE:
+					/* abort requested! */
 					fprintf(stderr, "space pressed\n");
 					rc->abort = 1;
+					wc->abort = 1;
+					//FIXME: adapt settings?
 					break;
 			}
 			break;
 			}
 		}
-
 	}
 }
 
 int main(int argc, char **argv)
 {
 	char **paths;
-
 	SDL_Thread *reader, *src_decoder, *encoder, *fov_decoder;
 	const int queue_capacity = 32;
 
