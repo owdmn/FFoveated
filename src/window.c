@@ -29,7 +29,6 @@ win_ctx *window_init()
 
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER);
 
-
 	flags = SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_FULLSCREEN_DESKTOP;
 	window = SDL_CreateWindow("FFoveated",
 		SDL_WINDOWPOS_CENTERED,
@@ -185,6 +184,7 @@ int frame_refresh(win_ctx *wc)
 	AVFrame *f;
 	SDL_Renderer *ren;
 	SDL_Rect rect;
+	SDL_Thread *flusher;
 
 	int64_t upts; // presentation time in micro seconds
 	int64_t uremaining; //remaining time in micro seconds
@@ -196,8 +196,16 @@ int frame_refresh(win_ctx *wc)
 	#endif
 
 	f = queue_extract(wc->frames);
+	printf("window got pointer: %p\n", (void *) f);
 	if (!f) {
 		printf("frame refresh returns 1\n");
+		SDL_LockMutex(wc->queue_mutex);
+		queue_free(&wc->frames);
+		queue_free(&wc->timestamps);
+		wc->queues_active = 0;
+		SDL_UnlockMutex(wc->queue_mutex);
+		SDL_CondSignal(wc->queue_cond);
+
 		return 1;
 	}
 	enc_time = queue_extract(wc->timestamps);
@@ -206,6 +214,14 @@ int frame_refresh(win_ctx *wc)
 	ren = SDL_GetRenderer(wc->window);
 	SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
 	SDL_RenderClear(ren);
+
+	if (wc->abort) {
+		SDL_RenderPresent(ren);
+		flusher = SDL_CreateThread(queue_flusher, "flusher", wc);
+		SDL_DetachThread(flusher);
+		return 1;
+	}
+
 	realloc_texture(wc, f);
 	SDL_UpdateYUVTexture(wc->texture, NULL,
 						f->data[0], f->linesize[0],
@@ -241,8 +257,20 @@ int frame_refresh(win_ctx *wc)
 
 void set_window_source(win_ctx *wc, Queue *frames, Queue *timestamps, AVRational time_base)
 {
+
+	if(SDL_LockMutex(wc->queue_mutex))
+		pexit(SDL_GetError());
+
+	if (wc->queues_active)
+		SDL_CondWait(wc->queue_cond, wc->queue_mutex);
+
 	wc->frames = frames;
 	wc->timestamps = timestamps;
 	wc->time_base = time_base;
 	wc->time_start = -1;
+	wc->abort = 0;
+	wc->queues_active = 1;
+
+	if(SDL_UnlockMutex(wc->queue_mutex))
+		pexit(SDL_GetError());
 }
