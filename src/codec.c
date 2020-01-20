@@ -172,6 +172,7 @@ int encoder_thread(void *ptr)
 	queue_append(ec->timestamps, NULL);
 	avcodec_close(ec->avctx);
 	avcodec_free_context(&ec->avctx);
+	encoder_free(&ec);
 	return 0;
 }
 
@@ -265,9 +266,10 @@ int decoder_thread(void *ptr)
 	//note continue/break pattern before adding functionality here
 	}
 
-	//enqueue flush packet in
+	//enqueue flush packet to output
 	queue_append(dc->frames, NULL);
 	avcodec_close(avctx);
+	decoder_free(&dc);
 	return 0;
 }
 

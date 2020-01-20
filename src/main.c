@@ -113,23 +113,20 @@ int main(int argc, char **argv)
 		ec = encoder_init(LIBX264, src_dc);
 		fov_dc = fov_decoder_init(ec);
 
+		/* context variables can be free'd anytime now! */
 		reader = SDL_CreateThread(reader_thread, "reader", rc);
 		src_decoder = SDL_CreateThread(decoder_thread, "src_decoder", src_dc);
 		encoder = SDL_CreateThread(encoder_thread, "encoder", ec);
 		fov_decoder = SDL_CreateThread(decoder_thread, "fov_decoder", fov_dc);
 
+		SDL_DetachThread(reader);
+		SDL_DetachThread(src_decoder);
+		SDL_DetachThread(encoder);
+		SDL_DetachThread(fov_decoder);
+
 		set_window_source(wc, fov_dc->frames, ec->timestamps, src_dc->avctx->time_base);
 		event_loop();
 
-		SDL_WaitThread(reader, NULL);
-		SDL_WaitThread(src_decoder, NULL);
-		SDL_WaitThread(encoder, NULL);
-		SDL_WaitThread(fov_decoder, NULL);
-
-		decoder_free(&fov_dc);
-		encoder_free(&ec);
-		decoder_free(&src_dc);
-		reader_free(&rc);
 	}
 
 	free_lines(&paths);

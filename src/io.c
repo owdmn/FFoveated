@@ -102,6 +102,7 @@ int reader_thread(void *ptr)
 	/* finally enqueue NULL to enter draining mode */
 	queue_append(rc->packets, NULL);
 	avformat_close_input(&rc->fctx);
+	reader_free(&rc);
 	return 0;
 }
 
