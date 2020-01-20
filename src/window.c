@@ -147,6 +147,39 @@ void flush_window_source(win_ctx *wc)
 	queue_free(&wc->frames);
 }
 
+static int queue_flusher(void *p)
+{
+
+	win_ctx *w = (win_ctx *) p;
+	Queue *frames;
+	Queue *timestamps;
+	AVFrame *f;
+	int64_t *t;
+
+	SDL_LockMutex(w->queue_mutex);
+	frames = w->frames;
+	timestamps = w->timestamps;
+
+	/* okay to overwrite, decoder has it's own copy for appending*/
+	w->frames = NULL;
+	w->timestamps = NULL;
+	w->queues_active = 0;
+
+	SDL_UnlockMutex(w->queue_mutex);
+	SDL_CondSignal(w->queue_cond);
+
+	while ((f = queue_extract(frames)))
+		av_frame_free(&f);
+
+	while ((t = queue_extract(timestamps)))
+		free(t);
+
+	queue_free(&frames);
+	queue_free(&timestamps);
+
+	return 0;
+}
+
 int frame_refresh(win_ctx *wc)
 {
 	AVFrame *f;
