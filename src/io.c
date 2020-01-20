@@ -78,8 +78,9 @@ int reader_thread(void *ptr)
 
 	while (1) {
 		if (rc->abort) {
-			printf("exiting reader loop");
-			break;
+			avformat_close_input(&rc->fctx);
+			queue_append(rc->packets, NULL);
+			return 0;
 		}
 
 		pkt = malloc(sizeof(AVPacket));
@@ -145,6 +146,7 @@ rdr_ctx *reader_init(char *filename, int queue_capacity)
 	rc->stream_index = stream_index;
 	rc->filename = fn_cpy;
 	rc->packets = packets;
+	rc->abort = 0;
 
 	return rc;
 }
