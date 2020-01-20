@@ -128,3 +128,16 @@ void *queue_extract(Queue *q)
 
 	return data;
 }
+
+int queue_length(Queue *q) {
+
+	size_t l;
+	SDL_LockMutex(q->mutex);
+	if (q->front >= q->rear)
+		l = q->front - q->rear;
+	else
+		l = q->capacity - (q->rear - q->front) -1;
+
+	SDL_UnlockMutex(q->mutex);
+	return l;
+}

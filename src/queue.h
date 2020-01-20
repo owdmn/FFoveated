@@ -73,3 +73,13 @@ void queue_append(Queue *q, void *data);
  * @return void* the first element of q.
  */
 void *queue_extract(Queue *q);
+
+/**
+ * Length of the queue (elements contained).
+ *
+ * Locks q->mutex during length calculation, unlocks afterwards.
+ * Result might be incorrect in multithreaded applications, be careful!
+ * @param q queue to examine
+ * @return int length of q
+ */
+int queue_length(Queue *q);
