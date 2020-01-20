@@ -50,6 +50,9 @@ win_ctx *window_init()
 		pexit("malloc failed");
 	wc->window = window;
 	wc->texture = NULL;
+	wc->queues_active= 0;
+	wc->queue_mutex = SDL_CreateMutex();
+	wc->queue_cond = SDL_CreateCond();
 	return wc;
 }
 

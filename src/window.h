@@ -26,10 +26,14 @@
 typedef struct win_ctx {
 	Queue *frames;
 	Queue *timestamps;
+	int queues_active;
+	SDL_mutex *queue_mutex;
+	SDL_cond *queue_cond;
 	SDL_Window *window;
 	SDL_Texture *texture;
 	int64_t time_start;
 	AVRational time_base;
+	int abort;
 } win_ctx;
 
 /**
