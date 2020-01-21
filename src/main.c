@@ -66,12 +66,8 @@ void event_loop(void)
 	if (wc->time_start != -1)
 		pexit("Error: call set_timing first");
 
-<<<<<<< HEAD
-	for (;;) {
-=======
 	while (1) {
 		fn++;
->>>>>>> 55d65a0689080d1655ed2b11976d9a9cf912a15a
 		// check for events to handle, meanwhile just render frames
 		if (frame_refresh(wc))
 			break;
