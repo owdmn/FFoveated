@@ -143,13 +143,13 @@ void setup_ivx(SDL_Window *w, enc_id id)
 
 	switch (ret_connect) {
 	case RET_SUCCESS:
-		printf("Successfully connected to SMI Server\n");
+		fprintf(stderr, "Successfully connected to SMI Server\n");
 		break;
 	case ERR_COULD_NOT_CONNECT:
-		printf("Error: Could not connect to SMI Server\n");
+		fprintf(stderr, "Error: Could not connect to SMI Server\n");
 		break;
 	default:
-		printf("Error: iV_Connect() returned: %d\n", ret_connect);
+		fprintf(stderr, "Error: iV_Connect() returned: %d\n", ret_connect);
 		exit(1);
 	}
 

@@ -19,6 +19,7 @@
 #include "codec.h"
 #include "pexit.h"
 #include "window.h"
+
 #include <inttypes.h>
 #include <limits.h>
 #include <math.h>
@@ -61,7 +62,7 @@ void event_loop(void)
 		pexit("Error: call set_timing first");
 
 	for (;;) {
-		/* check for events to handle, meanwhile just render frames */
+		// check for events to handle, meanwhile just render frames
 		if (frame_refresh(wc))
 			break;
 
@@ -74,7 +75,7 @@ void event_loop(void)
 					pexit("q pressed");
 					break;
 				case SDLK_SPACE:
-					/* abort requested! */
+					// abort requested!
 					fprintf(stderr, "space pressed\n");
 					rc->abort = 1;
 					wc->abort = 1;
@@ -112,7 +113,7 @@ int main(int argc, char **argv)
 		ec = encoder_init(LIBX264, src_dc);
 		fov_dc = fov_decoder_init(ec);
 
-		/* context variables can be free'd anytime now! */
+		// context variables can be free'd anytime now!
 		reader = SDL_CreateThread(reader_thread, "reader", rc);
 		src_decoder = SDL_CreateThread(decoder_thread, "src_decoder", src_dc);
 		encoder = SDL_CreateThread(encoder_thread, "encoder", ec);
