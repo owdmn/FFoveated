@@ -33,6 +33,7 @@ typedef struct dec_ctx {
 	Queue *frames;  //output
 	AVCodecContext *avctx; //to access internals (time_base etc.)
 	enc_id id;
+	AVRational frame_rate;
 } dec_ctx;
 
 /**
