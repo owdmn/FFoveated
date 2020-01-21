@@ -57,14 +57,27 @@ void display_usage(char *progname)
 void event_loop(void)
 {
 	SDL_Event event;
+	int fn = 0; //frame number
+	int fps = src_dc->frame_rate.num / src_dc->frame_rate.den;
+
+	if (fps > 60 || fps < 25)
+		pexit("questionable frame rate");
 
 	if (wc->time_start != -1)
 		pexit("Error: call set_timing first");
 
+<<<<<<< HEAD
 	for (;;) {
+=======
+	while (1) {
+		fn++;
+>>>>>>> 55d65a0689080d1655ed2b11976d9a9cf912a15a
 		// check for events to handle, meanwhile just render frames
 		if (frame_refresh(wc))
 			break;
+
+		if (fps % fn == 0)
+			;// FIXME: Reduce quality - this has to be done within proper codec dependent limits in et.c
 
 		SDL_PumpEvents();
 		while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {
@@ -77,6 +90,9 @@ void event_loop(void)
 				case SDLK_SPACE:
 					// abort requested!
 					fprintf(stderr, "space pressed\n");
+					/* FIXME: increase quality! this has to be done within proper codec dependent limits in et.c! */
+					//log event
+
 					rc->abort = 1;
 					wc->abort = 1;
 					//FIXME: adapt settings?

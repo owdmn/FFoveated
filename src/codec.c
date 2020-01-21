@@ -213,6 +213,7 @@ dec_ctx *source_decoder_init(rdr_ctx *rc, int queue_capacity)
 	dc->packets = rc->packets;
 	dc->frames = queue_init(queue_capacity);
 	dc->avctx = avctx;
+	dc->frame_rate = stream->r_frame_rate;
 
 	return dc;
 }
