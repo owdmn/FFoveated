@@ -29,9 +29,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <SDL2/SDL.h>
-#include <libavformat/avformat.h>
-#include <libavutil/time.h>
-#include <libavutil/frame.h>
 
 #ifdef ET
 #include "et.h"
@@ -60,8 +57,10 @@ void event_loop(void)
 	int fn = 0; //frame number
 	int fps = src_dc->frame_rate.num / src_dc->frame_rate.den;
 
-	if (fps > 60 || fps < 25)
+	fprintf(stderr, "fps: %d", fps);
+	if (fps > 60 || fps < 22) {
 		pexit("questionable frame rate");
+	}
 
 	if (wc->time_start != -1)
 		pexit("Error: call set_timing first");
@@ -115,8 +114,9 @@ int main(int argc, char **argv)
 	signal(SIGINT, exit);
 
 	paths = parse_lines(argv[1]);
+	setup_ivx(LIBX264);
 	wc = window_init();
-	setup_ivx(wc->window, LIBX264);
+	set_ivx_window(wc->window);
 
 	for (int i = 0; paths[i]; i++) {
 
@@ -125,7 +125,6 @@ int main(int argc, char **argv)
 		ec = encoder_init(LIBX264, src_dc);
 		fov_dc = fov_decoder_init(ec);
 
-		// context variables can be free'd anytime now!
 		reader = SDL_CreateThread(reader_thread, "reader", rc);
 		src_decoder = SDL_CreateThread(decoder_thread, "src_decoder", src_dc);
 		encoder = SDL_CreateThread(encoder_thread, "encoder", ec);
@@ -136,9 +135,10 @@ int main(int argc, char **argv)
 		SDL_DetachThread(encoder);
 		SDL_DetachThread(fov_decoder);
 
+		SDL_SetWindowFullscreen(wc->window, SDL_WINDOW_FULLSCREEN_DESKTOP);
+		SDL_RaiseWindow(wc->window);
 		set_window_source(wc, fov_dc->frames, ec->timestamps, src_dc->avctx->time_base);
 		event_loop();
-
 	}
 
 	free_lines(&paths);

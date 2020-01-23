@@ -30,6 +30,9 @@
 typedef struct lab_setup {
 	double screen_width; // in mm mm
 	double screen_height;
+	double screen_diam;
+	int screen_res_w;
+	int screen_res_h;
 	double camera_x;
 	double camera_z;
 	double camera_inclination;
@@ -45,8 +48,8 @@ typedef struct eye_data {
 } eye_data;
 
 typedef struct gaze {
-	int gazeX_mean;
-	int gazeY_mean;
+	float gazeX_mean;
+	float gazeY_mean;
 	eye_data left;
 	eye_data right;
 	double distance; //mean eye-screen distance
@@ -59,12 +62,15 @@ typedef struct gaze {
  * @param w SDL_Window, used for mouse-based pseudofoveation
  * @param id codec id to infer parameters
  */
-void setup_ivx(SDL_Window *w, enc_id id);
+void setup_ivx(enc_id id);
+
+
+void set_ivx_window(SDL_Window *w);
 
 /**
  * Allocate a foveation descriptor to pass to an encoder as AVSideData
  *
- * @param wc required for pseudo-foveation through the mouse pointer.
+ * @param frame resolution in x and y direction
  * @return float* 4-tuple: x and y coordinate, stddev and max quality offset
  */
-float *foveation_descriptor();
+float *foveation_descriptor(int frame_res_x, int frame_res_y);

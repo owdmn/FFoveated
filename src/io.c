@@ -18,7 +18,7 @@
 #include "io.h"
 #include "pexit.h"
 #include <libavutil/time.h>
-#include <linux/limits.h> /* PATH_MAX */
+#include <limits.h> /* PATH_MAX */
 
 char **parse_lines(const char *pathname)
 {

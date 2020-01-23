@@ -23,11 +23,15 @@ static lab_setup *ls;
 static SDL_Window *win;
 static params *p;
 
-float *foveation_descriptor()
+float *foveation_descriptor(int frame_res_w, int frame_res_h)
 {
 	float *fd;
-	int x, y;
+	float x, y;
+
+	float screen_diam, window_diam, frame_diam;
 	int win_x, win_y, w, h;
+
+	float frame_width_mm, frame_height_mm;
 
 	SDL_GetWindowSize(win, &w, &h);
 	SDL_GetWindowPosition(win, &win_x, &win_y);
@@ -37,14 +41,35 @@ float *foveation_descriptor()
 		pexit("malloc failed");
 
 	#ifdef ET
-	// eye-tracking
-	x = (float) (gs->gazeX_mean - win_x) / w;
-	y = (float) (gs->gazeY_mean - win_y) / h;
+
+	// eye-trackin
+	SDL_LockMutex(gs->mutex);
+	printf("gs->gazeX_mean: %f, w: %d, h: %d, win_x: %d, win_h: %d\n",gs->gazeX_mean, w, h, win_x, win_y);
+	x = (float) (gs->gazeX_mean - win_x) / (float) w;
+	y = (float) (gs->gazeY_mean - win_y) / (float) h;
+	SDL_UnlockMutex(gs->mutex);
+
+	printf("x: %f, y: %f\n", x, y);
 
 	fd[0] = x;
 	fd[1] = y;
-	fd[2] = 0.3;
-	fd[3] = 40;
+
+
+	printf("frame_res_w: %d, frame_res_h: %d\n", frame_res_w, frame_res_h);
+	frame_width_mm = ls->screen_width * (float) frame_res_w / ls->screen_res_w;
+	frame_height_mm = ls->screen_height * (float) frame_res_h / ls->screen_res_h;
+
+	/*
+	 * we assume a distance of 650mm to the screen,
+	 * then 2 * tan(2.5°) * 650 = 56.7mm is a reasonable choice for foveation diameter
+	 */
+
+	printf("frame_width_mm: %f, frame_height_mm: %f\n", frame_width_mm, frame_height_mm);
+	fd[2] = 56.7 / sqrt(pow(frame_width_mm, 2) + pow(frame_height_mm, 2));
+
+	printf("fd[2]: %f\n", fd[2]);
+
+	fd[3] = 10;
 
 	#else
 	// fake mouse motion dummy values
@@ -63,6 +88,7 @@ int __stdcall update_gaze(struct SampleStruct sampleData)
 {
 	double x, y, z; //mean eye coordinates for distance
 	//double theta;
+
 
 	SDL_LockMutex(gs->mutex);
 	gs->left.x = sampleData.leftEye.eyePositionX;
@@ -87,28 +113,24 @@ int __stdcall update_gaze(struct SampleStruct sampleData)
 	gs->gazeX_mean = (gs->left.gazeX + gs->right.gazeX) / 2;
 	gs->gazeY_mean = (gs->left.gazeY + gs->right.gazeY) / 2;
 
-	//theta = ls->camera_inclination;
-
-
-	//shift + rotate to map camera coordinates to screen-specific 3d coordinates
-	//calculate screen pixel coordinates in 3d space
-	//calculate distance
-
 	// distance towards eyetracker, not screen!!!
 	gs->distance = sqrt(x*x + y*y + z*z);
 
 	SDL_UnlockMutex(gs->mutex);
 
-	//SDL_UnlockMutex(gs->mutex);
 	return 0;
 }
 #endif
 
-void setup_ivx(SDL_Window *w, enc_id id)
+void set_ivx_window(SDL_Window *w)
+{
+	win = w;
+}
+
+void setup_ivx(enc_id id)
 {
 
 	// common setup for ET and non-ET applications
-	win = w;
 	gs = malloc(sizeof(gaze));
 	if (!gs)
 		pexit("malloc failed");
@@ -117,9 +139,13 @@ void setup_ivx(SDL_Window *w, enc_id id)
 	if (!ls)
 		pexit("malloc failed");
 
-	// Hardcoded 15.6" 16:9 FHD notebook display dimensions
-	ls->screen_width = 345;
-	ls->screen_height = 194;
+	// Hardcoded HP Z31x screen
+	ls->screen_width = 698;
+	ls->screen_height = 368;
+	ls->screen_diam = sqrt(pow(ls->screen_width, 2) + pow(ls->screen_height, 2));
+	ls->screen_res_w = 4096;
+	ls->screen_res_h = 2160;
+
 	ls->camera_x = 0;
 	ls->camera_z = 0;
 	ls->camera_inclination = 20; //degrees upward for the SMI bracket
@@ -137,9 +163,9 @@ void setup_ivx(SDL_Window *w, enc_id id)
 	int ret_validate = 0;
 	int ret_connect = 0;
 
-	char localhost[] = "127.0.0.1";
+	char *et_host = "134.34.231.186";
 
-	ret_connect = iV_Connect(localhost, 4444, localhost, 5555);
+	ret_connect = iV_Connect(et_host, 4444, "127.0.0.1", 5555);
 
 	switch (ret_connect) {
 	case RET_SUCCESS:
@@ -157,17 +183,17 @@ void setup_ivx(SDL_Window *w, enc_id id)
 
 	iV_ShowEyeImageMonitor();
 	iV_ShowTrackingMonitor();
-	getchar();
+	SDL_Delay(3000);
 
 	// Eyetracker calibration
-	calibrationData.method = 2;
-	calibrationData.speed = 1;
+	calibrationData.method = 1;
+	calibrationData.speed = 0;
 	calibrationData.displayDevice = 0;
 	calibrationData.targetShape = 2;
 	calibrationData.foregroundBrightness = 250;
 	calibrationData.backgroundBrightness = 230;
 	calibrationData.autoAccept = 2;
-	calibrationData.targetSize = 20;
+	calibrationData.targetSize = 30;
 	calibrationData.visualization = 1;
 	strncpy(calibrationData.targetFilename, "", 256);
 

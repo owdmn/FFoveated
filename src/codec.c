@@ -147,7 +147,8 @@ int encoder_thread(void *ptr)
 			sd = av_frame_new_side_data(frame, AV_FRAME_DATA_FOVEATION_DESCRIPTOR, descr_size);
 			if (!sd)
 				pexit("side data allocation failed");
-			descr = foveation_descriptor();
+
+			descr = foveation_descriptor(ec->avctx->width, ec->avctx->height);
 			sd->data = (uint8_t *) descr;
 
 			frame->pict_type = 0; //keep undefined to prevent warnings
@@ -256,7 +257,8 @@ int decoder_thread(void *ptr)
 			//provide another packet to the decoder
 			packet = queue_extract(dc->packets);
 			supply_packet(avctx, packet);
-			av_packet_free(&packet);
+			//FIXME: The next line (if uncommented) causes segfaults on windows!
+			//av_packet_free(&packet);
 			continue;
 		} else if (ret == AVERROR_EOF) {
 			break;

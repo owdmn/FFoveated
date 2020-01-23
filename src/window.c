@@ -17,6 +17,7 @@
 
 #include "window.h"
 #include "pexit.h"
+#include <inttypes.h>
 
 win_ctx *window_init()
 {
@@ -241,7 +242,7 @@ int frame_refresh(win_ctx *wc)
 
 	#ifdef DEBUG
 	delta = now - *enc_time;
-	printf("rem: %ld, upts: %ld, now: %ld, delta: %ld\n", uremaining, upts, now, delta);
+	printf("rem: %"PRId64", upts: %"PRIdMAX ", now: %"PRId64", delta: %"PRId64 "\n", uremaining, upts, now, delta);
 	#endif
 
 	if (uremaining > 0)
