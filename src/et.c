@@ -172,6 +172,7 @@ void setup_ivx(enc_id id)
 	struct SystemInfoStruct systemData;
 	struct CalibrationStruct calibrationData;
 	struct SpeedModeStruct speedData;
+	struct REDGeometryStruct geometry;
 
 	int ret_calibrate = 0;
 	int ret_validate = 0;
@@ -195,12 +196,22 @@ void setup_ivx(enc_id id)
 
 	iV_GetSpeedModes(&speedData);
 
+	geometry.redGeometry = standalone; //mode
+	geometry.stimX = ls->screen_width;
+	geometry.stimY = ls->screen_height;
+	geometry.redInclAngle = 20;  //degrees
+	geometry.redStimDistHeight = 25; //mm
+	geometry.redStimDistDepth =  80; //mm
+	strncpy(geometry.setupName, "HPZ31x", 256);
+
+	iV_SetREDGeometry(&geometry);
+
 	iV_ShowEyeImageMonitor();
 	iV_ShowTrackingMonitor();
 	SDL_Delay(3000);
 
 	// Eyetracker calibration
-	calibrationData.method = 1;
+	calibrationData.method = 3;
 	calibrationData.speed = 0;
 	calibrationData.displayDevice = 0;
 	calibrationData.targetShape = 2;
