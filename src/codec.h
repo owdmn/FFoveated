@@ -47,6 +47,9 @@ typedef struct enc_ctx {
 	AVCodecContext *avctx;
 	AVDictionary *options; //encoder options
 	enc_id id;
+	int run; // run of the same video, just for logging purposes
+	char *path;  // filename, just for logging purposes
+	FILE *log;
 } enc_ctx;
 
 /**
@@ -59,7 +62,7 @@ typedef struct enc_ctx {
  * @param dc context of the decoder which supplies the frames, to set e.g. the time base.
  * @param w_ctx window context, necessary for pseudo-gaze emulation through the mouse pointer.
  */
-enc_ctx *encoder_init(enc_id id, dec_ctx *dc);
+enc_ctx *encoder_init(enc_id id, dec_ctx *dc, int run, char *path);
 
 /**
  * Free the encoder context and associated data.
@@ -126,3 +129,7 @@ void decoder_free(dec_ctx **dc);
  * @return params* with initialized min/max values depending on the coded
  */
 params *params_limit_init(enc_id id);
+
+
+void log_message(enc_ctx *ec, char *msg);
+

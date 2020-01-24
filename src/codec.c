@@ -17,6 +17,8 @@
 
 #include "codec.h"
 #include "pexit.h"
+#include <string.h>
+#include <stdio.h>
 
 static void set_codec_options(AVDictionary **opt, enc_id id)
 {
@@ -38,12 +40,14 @@ static void set_codec_options(AVDictionary **opt, enc_id id)
 	}
 }
 
-enc_ctx *encoder_init(enc_id id, dec_ctx *dc)
+enc_ctx *encoder_init(enc_id id, dec_ctx *dc, int run, char* path)
 {
 	enc_ctx *ec;
 	AVCodecContext *avctx;
 	AVCodec *codec;
 	AVDictionary *options = NULL;
+	char *logpath;
+	char *runbuffer;
 
 	ec = malloc(sizeof(enc_ctx));
 	if (!ec)
@@ -86,6 +90,27 @@ enc_ctx *encoder_init(enc_id id, dec_ctx *dc)
 	ec->options = options;
 	ec->id = id;
 
+	ec->run = run;
+	ec->path = path;
+
+	logpath = malloc(512*sizeof(char));
+	if (!logpath)
+		pexit("malloc failed");
+
+	runbuffer = malloc(5*sizeof(char));
+	if (!runbuffer)
+		pexit("malloc failed");
+
+	sprintf(runbuffer, "%d", run);
+
+	strcpy(logpath, "log\\");
+	strcat(logpath, path);
+	strcat(logpath, "-run-");
+	strcat(logpath, runbuffer);
+	strcat(logpath, ".csv");
+	printf(logpath);
+	ec->log = fopen(logpath, "w");
+
 	return ec;
 }
 
@@ -116,6 +141,17 @@ static void supply_frame(AVCodecContext *avctx, AVFrame *frame)
 		pexit("memory allocation failed");
 }
 
+void log_message(enc_ctx *ec, char *msg)
+{
+	fprintf(ec->log, msg);
+}
+
+static void log_fov_descr(FILE *f, float* descr, int frameno)
+{
+	fprintf(f, "%d,%f,%f,%f,%f\n", frameno, descr[0], descr[1], descr[2], descr[3]);
+}
+
+
 int encoder_thread(void *ptr)
 {
 	enc_ctx *ec = (enc_ctx *) ptr;
@@ -126,6 +162,7 @@ int encoder_thread(void *ptr)
 	size_t descr_size = 4*sizeof(float);
 	int ret;
 	int64_t *timestamp;
+	int frame_number = 0;
 
 	pkt = av_packet_alloc(); //NULL check in loop.
 
@@ -150,6 +187,8 @@ int encoder_thread(void *ptr)
 
 			descr = foveation_descriptor(ec->avctx->width, ec->avctx->height);
 			sd->data = (uint8_t *) descr;
+			log_fov_descr(ec->log, descr, frame_number);
+			frame_number++;
 
 			frame->pict_type = 0; //keep undefined to prevent warnings
 			supply_frame(ec->avctx, frame);
@@ -172,6 +211,7 @@ int encoder_thread(void *ptr)
 	queue_append(ec->packets, NULL);
 	queue_append(ec->timestamps, NULL);
 	avcodec_close(ec->avctx);
+	fclose(ec->log);
 	avcodec_free_context(&ec->avctx);
 	encoder_free(&ec);
 	return 0;

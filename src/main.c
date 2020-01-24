@@ -42,7 +42,7 @@ win_ctx *wc;
 
 void display_usage(char *progname)
 {
-	printf("usage:\n$ %s infile\n", progname);
+	printf("usage:\n$ %s infile index\n", progname);
 }
 
 /**
@@ -51,11 +51,19 @@ void display_usage(char *progname)
  * Calls pexit in case of a failure.
  * @param w_ctx window_context to which rendering and event handling applies.
  */
-void event_loop(void)
+void event_loop(int run)
 {
 	SDL_Event event;
 	int fn = 0; //frame number
 	int fps = src_dc->frame_rate.num / src_dc->frame_rate.den;
+	char msgbuf[1024];
+
+	static float qp_offset = 0;
+	set_qp_offset(qp_offset);
+
+	int reduce[] =  {10,  5,  3,  2,  2, 1, 1, 1, 1, 1};
+	int lift[] =    {25, 20, 17, 15, 10, 8, 8, 5, 5, 5};
+	int delay[] =   { 1,  1,  1,  1,  1, 2, 2, 2, 2, 2};
 
 	fprintf(stderr, "fps: %d", fps);
 	if (fps > 60 || fps < 22) {
@@ -71,8 +79,11 @@ void event_loop(void)
 		if (frame_refresh(wc))
 			break;
 
-		if (fps % fn == 0)
-			;// FIXME: Reduce quality - this has to be done within proper codec dependent limits in et.c
+		if (fn % (fps * delay[run]) == 0) {
+			// reduce qp every second by reduce[run]
+			qp_offset = get_qp_offset() + reduce[run];
+			set_qp_offset(qp_offset);
+		}
 
 		SDL_PumpEvents();
 		while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_FIRSTEVENT, SDL_LASTEVENT)) {
@@ -83,14 +94,13 @@ void event_loop(void)
 					pexit("q pressed");
 					break;
 				case SDLK_SPACE:
-					// abort requested!
-					fprintf(stderr, "space pressed\n");
-					/* FIXME: increase quality! this has to be done within proper codec dependent limits in et.c! */
-					//log event
-
 					rc->abort = 1;
 					wc->abort = 1;
-					//FIXME: adapt settings?
+					//increase by upfkt[3un]
+					printf("run: %d, qp_offset: %f, lift[run]: %d\n", run, qp_offset, lift[run]);
+					qp_offset =  (qp_offset - lift[run]) > 0 ? (qp_offset - lift[run]) : 0;
+					sprintf(msgbuf, "space pressed, setting qp_offset to: %f", qp_offset);
+					log_message(ec, msgbuf);
 					break;
 			}
 			break;
@@ -104,8 +114,9 @@ int main(int argc, char **argv)
 	char **paths;
 	SDL_Thread *reader, *src_decoder, *encoder, *fov_decoder;
 	const int queue_capacity = 32;
+	int i;
 
-	if (argc != 2) {
+	if (argc != 3) {
 		display_usage(argv[0]);
 		exit(EXIT_FAILURE);
 	}
@@ -118,11 +129,13 @@ int main(int argc, char **argv)
 	wc = window_init();
 	set_ivx_window(wc->window);
 
-	for (int i = 0; paths[i]; i++) {
+	//for (int i = 0; paths[i]; i++) {
 
+	i = atoi(argv[2]);
+	for (int  run = 0; run < 10; run++) {
 		rc = reader_init(paths[i], queue_capacity);
 		src_dc = source_decoder_init(rc, queue_capacity);
-		ec = encoder_init(LIBX264, src_dc);
+		ec = encoder_init(LIBX264, src_dc, run, paths[i]);
 		fov_dc = fov_decoder_init(ec);
 
 		reader = SDL_CreateThread(reader_thread, "reader", rc);
@@ -138,7 +151,8 @@ int main(int argc, char **argv)
 		SDL_SetWindowFullscreen(wc->window, SDL_WINDOW_FULLSCREEN_DESKTOP);
 		SDL_RaiseWindow(wc->window);
 		set_window_source(wc, fov_dc->frames, ec->timestamps, src_dc->avctx->time_base);
-		event_loop();
+		event_loop(run);
+		pause(wc->window);
 	}
 
 	free_lines(&paths);
