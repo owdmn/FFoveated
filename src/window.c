@@ -197,7 +197,6 @@ int frame_refresh(win_ctx *wc)
 	#endif
 
 	f = queue_extract(wc->frames);
-	printf("window got pointer: %p\n", (void *) f);
 	if (!f) {
 		printf("frame refresh returns 1\n");
 		SDL_LockMutex(wc->queue_mutex);

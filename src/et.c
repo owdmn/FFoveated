@@ -74,7 +74,6 @@ float *foveation_descriptor(int frame_width, int frame_height)
 	fd[0] = x / frame_width;
 	fd[1] = y / frame_height;
 
-	printf("frame_res_w: %d, frame_res_h: %d\n", frame_width, frame_height);
 	frame_width_mm = ls->screen_width * (float) frame_width / ls->screen_res_w;
 	frame_height_mm = ls->screen_height * (float) frame_height / ls->screen_res_h;
 
