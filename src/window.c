@@ -180,6 +180,16 @@ static int queue_flusher(void *p)
 	return 0;
 }
 
+void pause(SDL_Window *w)
+{
+	SDL_Renderer *ren;
+	ren = SDL_GetRenderer(w);
+	SDL_SetRenderDrawColor(ren, 0, 0, 0, 255);
+	SDL_RenderClear(ren);
+	SDL_RenderPresent(ren);
+	SDL_Delay(500);
+}
+
 int frame_refresh(win_ctx *wc)
 {
 	AVFrame *f;

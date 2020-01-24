@@ -77,3 +77,5 @@ void set_window_source(win_ctx *wc, Queue *frames, Queue *timestamps, AVRational
  * @param wc window context to flush
  */
 void flush_window_source(win_ctx *wc);
+
+void pause();
