@@ -23,17 +23,32 @@ static lab_setup *ls;
 static SDL_Window *win;
 static params *p;
 
-float *foveation_descriptor(int frame_res_w, int frame_res_h)
+void increase_qp_offset(int stepsize)
+{
+
+}
+
+void decrease_qp_offset(int stepsize)
+{
+
+}
+
+static float qp_offset()
+{
+	return 20;
+}
+
+float *foveation_descriptor(int frame_width, int frame_height)
 {
 	float *fd;
 	float x, y;
-
-	float screen_diam, window_diam, frame_diam;
-	int win_x, win_y, w, h;
+	int x_int, y_int;
+	int win_x, win_y;
+	int win_width, win_height;
 
 	float frame_width_mm, frame_height_mm;
 
-	SDL_GetWindowSize(win, &w, &h);
+	SDL_GetWindowSize(win, &win_width, &win_height);
 	SDL_GetWindowPosition(win, &win_x, &win_y);
 
 	fd = malloc(4*sizeof(float));
@@ -41,45 +56,35 @@ float *foveation_descriptor(int frame_res_w, int frame_res_h)
 		pexit("malloc failed");
 
 	#ifdef ET
-
-	// eye-trackin
 	SDL_LockMutex(gs->mutex);
-	printf("gs->gazeX_mean: %f, w: %d, h: %d, win_x: %d, win_h: %d\n",gs->gazeX_mean, w, h, win_x, win_y);
-	x = (float) (gs->gazeX_mean - win_x) / (float) w;
-	y = (float) (gs->gazeY_mean - win_y) / (float) h;
+	//gaze coordinates have their origin at the upper left screen corner, shift to upper left window corner
+	x = (float) gs->gazeX_mean - win_x;
+	y = (float) gs->gazeY_mean - win_y;
 	SDL_UnlockMutex(gs->mutex);
+	#else
+	SDL_GetMouseState(&x_int, &y_int);
+	//mouse coordinates have origin already at upper left window corner
+	x = (float) x_int;
+	y = (float) y_int;
+	#endif
+	//shift by border margins to make origin upper left frame corner
+	x = x - ((win_width - frame_width) / 2);
+	y = y - ((win_height - frame_height) / 2);
+	//descriptor coordinates are relative in terms of frame width/height
+	fd[0] = x / frame_width;
+	fd[1] = y / frame_height;
 
-	printf("x: %f, y: %f\n", x, y);
-
-	fd[0] = x;
-	fd[1] = y;
-
-
-	printf("frame_res_w: %d, frame_res_h: %d\n", frame_res_w, frame_res_h);
-	frame_width_mm = ls->screen_width * (float) frame_res_w / ls->screen_res_w;
-	frame_height_mm = ls->screen_height * (float) frame_res_h / ls->screen_res_h;
+	printf("frame_res_w: %d, frame_res_h: %d\n", frame_width, frame_height);
+	frame_width_mm = ls->screen_width * (float) frame_width / ls->screen_res_w;
+	frame_height_mm = ls->screen_height * (float) frame_height / ls->screen_res_h;
 
 	/*
 	 * we assume a distance of 650mm to the screen,
 	 * then 2 * tan(2.5°) * 650 = 56.7mm is a reasonable choice for foveation diameter
 	 */
-
-	printf("frame_width_mm: %f, frame_height_mm: %f\n", frame_width_mm, frame_height_mm);
 	fd[2] = 56.7 / sqrt(pow(frame_width_mm, 2) + pow(frame_height_mm, 2));
+	fd[3] = qp_offset();
 
-	printf("fd[2]: %f\n", fd[2]);
-
-	fd[3] = 10;
-
-	#else
-	// fake mouse motion dummy values
-	SDL_GetMouseState(&x, &y);
-
-	fd[0] = (float) x / w;
-	fd[1] = (float) y / h;
-	fd[2] = 0.3;
-	fd[3] = 50;
-	#endif
 	return fd;
 }
 
@@ -145,6 +150,15 @@ void setup_ivx(enc_id id)
 	ls->screen_diam = sqrt(pow(ls->screen_width, 2) + pow(ls->screen_height, 2));
 	ls->screen_res_w = 4096;
 	ls->screen_res_h = 2160;
+
+	//Hardcoded: T470s screen
+	/*
+	ls->screen_width = 310;
+	ls->screen_height = 170;
+	ls->screen_diam = sqrt(pow(ls->screen_width, 2) + pow(ls->screen_height, 2));
+	ls->screen_res_w = 2560;
+	ls->screen_res_h = 1440;
+	*/
 
 	ls->camera_x = 0;
 	ls->camera_z = 0;

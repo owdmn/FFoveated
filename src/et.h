@@ -74,3 +74,8 @@ void set_ivx_window(SDL_Window *w);
  * @return float* 4-tuple: x and y coordinate, stddev and max quality offset
  */
 float *foveation_descriptor(int frame_res_x, int frame_res_y);
+
+
+void increase_qp_offset(int stepsize);
+
+void decrease_qp_offset(int stepsize);
