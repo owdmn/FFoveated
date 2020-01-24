@@ -17,25 +17,31 @@
 
 #include "et.h"
 #include "pexit.h"
+#include <SDL2/SDL.h>
 
+#define ET
 static gaze *gs;
 static lab_setup *ls;
 static SDL_Window *win;
 static params *p;
 
-void increase_qp_offset(int stepsize)
-{
+static SDL_mutex *qp_offset_mutex;
+static float qp_offset;
 
+void set_qp_offset(int q)
+{
+	SDL_LockMutex(qp_offset_mutex);
+	qp_offset = q;
+	SDL_UnlockMutex(qp_offset_mutex);
 }
 
-void decrease_qp_offset(int stepsize)
+float get_qp_offset()
 {
-
-}
-
-static float qp_offset()
-{
-	return 20;
+	float q;
+	SDL_LockMutex(qp_offset_mutex);
+	q = qp_offset;
+	SDL_UnlockMutex(qp_offset_mutex);
+	return q;
 }
 
 float *foveation_descriptor(int frame_width, int frame_height)
@@ -82,7 +88,7 @@ float *foveation_descriptor(int frame_width, int frame_height)
 	 * then 2 * tan(2.5°) * 650 = 56.7mm is a reasonable choice for foveation diameter
 	 */
 	fd[2] = 56.7 / sqrt(pow(frame_width_mm, 2) + pow(frame_height_mm, 2));
-	fd[3] = qp_offset();
+	fd[3] = get_qp_offset();
 
 	return fd;
 }
@@ -165,6 +171,8 @@ void setup_ivx(enc_id id)
 	gs->mutex = SDL_CreateMutex();
 	p = params_limit_init(id);
 
+	qp_offset_mutex = SDL_CreateMutex();
+
 	#ifdef ET
 
 	struct AccuracyStruct accuracyData;
@@ -207,7 +215,7 @@ void setup_ivx(enc_id id)
 
 	iV_ShowEyeImageMonitor();
 	iV_ShowTrackingMonitor();
-	SDL_Delay(3000);
+	SDL_Delay(5000);
 
 	// Eyetracker calibration
 	calibrationData.method = 3;
@@ -217,7 +225,7 @@ void setup_ivx(enc_id id)
 	calibrationData.foregroundBrightness = 250;
 	calibrationData.backgroundBrightness = 230;
 	calibrationData.autoAccept = 2;
-	calibrationData.targetSize = 30;
+	calibrationData.targetSize = 35;
 	calibrationData.visualization = 1;
 	strncpy(calibrationData.targetFilename, "", 256);
 

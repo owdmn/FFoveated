@@ -76,6 +76,7 @@ void set_ivx_window(SDL_Window *w);
 float *foveation_descriptor(int frame_res_x, int frame_res_y);
 
 
-void increase_qp_offset(int stepsize);
+void set_qp_offset(int q);
 
-void decrease_qp_offset(int stepsize);
+float get_qp_offset();
+
