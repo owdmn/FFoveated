@@ -96,7 +96,7 @@ void reader_free(rdr_ctx **rc);
 /**
  * Create and initialize a writer context
  */
-wtr_ctx *writer_init(char *filename, Queue *packets, AVCodecContext *enc_ctx);
+wtr_ctx *writer_init(char *filename, Queue *packets, rdr_ctx *rc, AVCodecContext *enc_ctx);
 
 /**
  * Accept packets from a queue and write them to multiplexed container

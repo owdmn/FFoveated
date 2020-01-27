@@ -162,7 +162,7 @@ void reader_free(rdr_ctx **rc)
 	*rc = NULL;
 }
 
-wtr_ctx *writer_init(char *path, Queue *packets, AVCodecContext *enc_ctx)
+wtr_ctx *writer_init(char *path, Queue *packets, rdr_ctx *rc, AVCodecContext *enc_ctx)
 {
 	wtr_ctx *w;
 	AVFormatContext *ctx;
@@ -178,6 +178,8 @@ wtr_ctx *writer_init(char *path, Queue *packets, AVCodecContext *enc_ctx)
 	stream = avformat_new_stream(ctx, NULL);
 	if (!stream)
 		pexit("output stream allocation failed");
+
+	stream->time_base = rc->fctx->streams[rc->stream_index]->time_base;
 
 	ret = avcodec_parameters_from_context(stream->codecpar, enc_ctx);
 	if (ret < 0)

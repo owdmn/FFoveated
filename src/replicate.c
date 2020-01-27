@@ -69,7 +69,7 @@ int main(int argc, char **argv)
 	rc = reader_init(argv[1], queue_capacity);
 	src_dc = source_decoder_init(rc, queue_capacity);
 	ec = replicate_encoder_init(LIBX264, src_dc, xcoords, ycoords, qoffsets, sigmas);
-	wt = writer_init(argv[2], ec->packets, ec->avctx);
+	wt = writer_init(argv[2], ec->packets, rc->fctx, src_dc->avctx);
 
 	reader = SDL_CreateThread(reader_thread, "reader", rc);
 	src_decoder = SDL_CreateThread(decoder_thread, "src_decoder", src_dc);
