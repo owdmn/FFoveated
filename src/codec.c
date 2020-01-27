@@ -40,6 +40,59 @@ static void set_codec_options(AVDictionary **opt, enc_id id)
 	}
 }
 
+rep_enc_ctx *replicate_encoder_init(enc_id id, dec_ctx *dc, char** xcoords, char **ycoords, char **qoffsets, char **sigmas)
+{
+	rep_enc_ctx *ec;
+	AVCodecContext *avctx;
+	AVCodec *codec;
+	AVDictionary *options = NULL;
+
+	ec = malloc(sizeof(enc_ctx));
+	if (!ec)
+		pexit("malloc failed");
+
+	switch (id) {
+	case LIBX264:
+		set_codec_options(&options, LIBX264);
+		codec = avcodec_find_encoder_by_name("libx264");
+		break;
+	case LIBX265:
+		set_codec_options(&options, LIBX265);
+		codec = avcodec_find_encoder_by_name("libx265");
+		break;
+	default:
+		codec = NULL;
+	}
+
+	if (!codec)
+		pexit("encoder not found");
+
+	avctx = avcodec_alloc_context3(codec);
+	if (!avctx)
+		pexit("avcodec_alloc_context3 failed");
+
+	avctx->time_base	= dc->avctx->time_base;
+	avctx->pix_fmt		= codec->pix_fmts[0]; //first supported pixel format
+	avctx->width		= dc->avctx->width;
+	avctx->height		= dc->avctx->height;
+
+	if (avcodec_open2(avctx, avctx->codec, &options) < 0)
+		pexit("avcodec_open2 failed");
+
+	ec->frames = dc->frames;
+	/* output queues have length 1 to enforce RT processing */
+	ec->packets = queue_init(1);
+
+	ec->avctx = avctx;
+	ec->options = options;
+	ec->id = id;
+	ec->xcoords = xcoords;
+	ec->ycoords = ycoords;
+	ec->qoffsets = qoffsets;
+	ec->sigmas = sigmas;
+	return ec;
+}
+
 enc_ctx *encoder_init(enc_id id, dec_ctx *dc, int run, char* path)
 {
 	enc_ctx *ec;
@@ -151,6 +204,81 @@ static void log_fov_descr(FILE *f, float* descr, int frameno)
 	fprintf(f, "%d,%f,%f,%f,%f\n", frameno, descr[0], descr[1], descr[2], descr[3]);
 }
 
+int replicate_encoder_thread(void *ptr)
+{
+	rep_enc_ctx *ec = (rep_enc_ctx *) ptr;
+	AVFrame *frame;
+	AVPacket *pkt;
+	AVFrameSideData *sd;
+	float *descr;
+	size_t descr_size = 4*sizeof(float);
+	int ret;
+	int64_t *timestamp;
+	int frame_number = 0;
+	float x, y, q, sigma;
+
+	pkt = av_packet_alloc(); //NULL check in loop.
+
+	for (;;) {
+		if (!pkt)
+			pexit("av_packet_alloc failed");
+
+		ret = avcodec_receive_packet(ec->avctx, pkt);
+		if (ret == 0) {
+			queue_append(ec->packets, pkt);
+			pkt = av_packet_alloc();
+			continue;
+		} else if (ret == AVERROR(EAGAIN)) {
+
+			if (!ec->xcoords[frame_number])
+				break;
+
+			x = strtof(ec->xcoords[frame_number], NULL);
+			y = strtof(ec->ycoords[frame_number], NULL);
+			q = strtof(ec->qoffsets[frame_number], NULL);
+			sigma = strtof(ec->sigmas[frame_number], NULL);
+
+			//MIGHT BE BLOCKING
+			frame = queue_extract(ec->frames);
+
+			if (!frame)
+				break;
+			sd = av_frame_new_side_data(frame, AV_FRAME_DATA_FOVEATION_DESCRIPTOR, descr_size);
+			if (!sd)
+				pexit("side data allocation failed");
+
+			descr = malloc(4*sizeof(float));
+			if (!descr)
+				pexit("malloc failed");
+			descr[0] = x;
+			descr[1] = y;
+			descr[2] = sigma;
+			descr[3] = q;
+
+			sd->data = (uint8_t *) descr;
+			frame_number++;
+			frame->pict_type = 0; //keep undefined to prevent warnings
+			supply_frame(ec->avctx, frame);
+			av_frame_free(&frame);
+
+			timestamp = malloc(sizeof(int64_t));
+			if (!timestamp)
+				perror("malloc failed");
+			*timestamp = av_gettime_relative();
+
+		} else if (ret == AVERROR_EOF) {
+			break;
+		} else if (ret == AVERROR(EINVAL)) {
+			pexit("avcodec_receive_packet failed");
+		}
+	}
+
+	queue_append(ec->packets, NULL);
+	avcodec_close(ec->avctx);
+	avcodec_free_context(&ec->avctx);
+	//encoder_free(&ec);
+	return 0;
+}
 
 int encoder_thread(void *ptr)
 {

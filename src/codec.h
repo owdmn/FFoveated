@@ -53,6 +53,22 @@ typedef struct enc_ctx {
 } enc_ctx;
 
 /**
+ * Encoder context / status information.
+ * Passed  to encoder_thread through SDL_CreateThread
+ */
+typedef struct rep_enc_ctx {
+	Queue *packets; //output
+	Queue *frames;  //input
+	AVCodecContext *avctx;
+	AVDictionary *options; //encoder options
+	enc_id id;
+	char** xcoords;
+	char** ycoords;
+	char** qoffsets;
+	char** sigmas;
+} rep_enc_ctx;
+
+/**
  * Initialize a realtime (re)encoder
  *
  * Output queues have length 1 to enforce consumption of already processed
@@ -63,6 +79,14 @@ typedef struct enc_ctx {
  * @param w_ctx window context, necessary for pseudo-gaze emulation through the mouse pointer.
  */
 enc_ctx *encoder_init(enc_id id, dec_ctx *dc, int run, char *path);
+
+
+/**
+ * Initialize a replication encoder, which produces the same stream that was
+ * created in a real-time experiment previously.
+ */
+rep_enc_ctx *replicate_encoder_init(enc_id id, dec_ctx *dc, char **xcoords, char **ycoords, char **qoffsets,char **sigmas);
+
 
 /**
  * Free the encoder context and associated data.
@@ -82,6 +106,9 @@ void encoder_free(enc_ctx **ec);
  * @return int 0 on success
  */
 int encoder_thread(void *ptr);
+
+
+int replicate_encoder_thread(void *ptr);
 
 /**
  * Initialize a source decoder.
@@ -132,4 +159,3 @@ params *params_limit_init(enc_id id);
 
 
 void log_message(enc_ctx *ec, char *msg);
-
