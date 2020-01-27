@@ -162,4 +162,70 @@ void reader_free(rdr_ctx **rc)
 	*rc = NULL;
 }
 
+wtr_ctx *writer_init(char *path, Queue *packets, AVCodecContext *enc_ctx)
+{
+	wtr_ctx *w;
+	AVFormatContext *ctx;
+	AVStream *stream;
+	int ret;
 
+	ctx = NULL;
+	avformat_alloc_output_context2(&ctx, NULL, NULL, path);
+	if (!ctx)
+		pexit("output context allocation failed");
+
+	// just one stream for video
+	stream = avformat_new_stream(ctx, NULL);
+	if (!stream)
+		pexit("output stream allocation failed");
+
+	ret = avcodec_parameters_from_context(stream->codecpar, enc_ctx);
+	if (ret < 0)
+		pexit("avcodec_parameters_from_context failed");
+
+	ret = avio_open(&ctx->pb, path, AVIO_FLAG_WRITE);
+	if (ret < 0)
+		pexit("avio_open failed");
+
+	ret = avformat_write_header(ctx, NULL);
+	if (ret < 0)
+		pexit("malloc failed");
+
+	w = malloc(sizeof(wtr_ctx));
+	if (!w)
+		pexit("malloc failed");
+
+	w->fctx = ctx;
+	w->packets = packets;
+	//w->fctx = enc_ctx;
+
+	return w;
+}
+
+int writer_thread(void *ptr)
+{
+	wtr_ctx *w;
+	AVPacket *pkt;
+	int ret;
+
+	w = (wtr_ctx *) ptr;
+
+	while (1) {
+		pkt = queue_extract(w->packets);
+
+		if(!pkt) //NULL signals end of input
+			break;
+
+		ret = av_interleaved_write_frame(w->fctx, pkt);
+		if (ret < 0)
+			pexit("av_interleaved_write_frame failed");
+
+	}
+	av_write_trailer(w->fctx);
+	avformat_free_context(w->fctx);
+
+	//FIXME: ugly hack to avoid cleanup.
+	exit(0);
+
+	return 0;
+}

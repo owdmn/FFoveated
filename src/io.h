@@ -29,7 +29,11 @@ typedef struct rdr_ctx {
 	int abort;
 } rdr_ctx;
 
-
+// Passed to writer_thread through SDL_CreateThread
+typedef struct wtr_ctx {
+	Queue *packets;
+	AVFormatContext *fctx;
+} wtr_ctx;
 
 /**
  * Parse a file line by line.
@@ -88,3 +92,14 @@ rdr_ctx *reader_init(char *filename, int queue_capacity);
  * @param r_ctx reader context to be freed.
  */
 void reader_free(rdr_ctx **rc);
+
+/**
+ * Create and initialize a writer context
+ */
+wtr_ctx *writer_init(char *filename, Queue *packets, AVCodecContext *enc_ctx);
+
+/**
+ * Accept packets from a queue and write them to multiplexed container
+ * on disk.
+ */
+int writer_thread(void *ptr);
