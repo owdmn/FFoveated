@@ -5,12 +5,12 @@ CHECKPATCH = /path/to/checkpatch.pl
 
 CPFLAGS = --no-tree --no-signoff -f --ignore NEW_TYPEDEFS,AVOID_EXTERNS,SPDX_LICENSE_TAG,CONST_STRUCT
 CC = gcc
-CFLAGS= -I$(FFMPEG) -Wall -Wextra -Wpedantic
-LDFLAGS= -L$(FFMPEG) -lavutil -lavcodec -lavdevice -lavformat -lSDL2
+CFLAGS= -I$(FFMPEG) -Wall -Wextra -Wpedantic -g
+LDFLAGS= -L$(FFMPEG) -lavutil -lavcodec -lavdevice -lavformat -lSDL2 -lm -g
 
 .PHONY: clean checkpatch
 
-all: debug
+all: main
 
 eyetracking: CFLAGS += -DET
 eyetracking: main
@@ -25,9 +25,12 @@ debug: main
 main: io.o codec.o et.o main.o pexit.o queue.o window.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
+replicate: replicate.o io.o codec.o et.o pexit.o queue.o
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
 checkpatch:
 	perl $(CHECKPATCH) $(CPFLAGS) *.c *.h
 
 clean:
-	rm -f main *.o *.out
+	rm -f main replicate *.o *.out
 
