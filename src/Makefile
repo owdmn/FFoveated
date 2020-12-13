@@ -1,6 +1,5 @@
 #### Configurable paths:
-FFMPEG = /path/to/FFmpeg/**
-CHECKPATCH = /path/to/checkpatch.pl
+FFMPEG = ../ffmpeg-foveated/
 ####
 
 CPFLAGS = --no-tree --no-signoff -f --ignore NEW_TYPEDEFS,AVOID_EXTERNS,SPDX_LICENSE_TAG,CONST_STRUCT
