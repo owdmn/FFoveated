@@ -34,14 +34,35 @@ The graphic below displays a conceptual schematic of FFoveated.
 Central part is the "foveated encoder", which takes input either directly from
 some sort of live source, e.g. a camera or the display buffer of some render
 engine, or as a raw frame sequence from a previously decoded file. The latter
-is useful to repeatedly evaluate this approach 
-
+is useful to repeatedly evaluate this approach with different codec
+parameterizations.
 
 
 ## Building :hammer:
 Building FFoveated is *slightly* inconvenient - enhancing this process is on the
 todo list. However, the two main components of this project are found in the
 `ffmpeg-foveated/` and `src/` directories.
+
+### Dependencies
+
+The project is pretty tame dependency wise should build on most
+Linux installations right out of the box, you'll just need
+
+- libsdl2
+
+
+#### SMI Eye Tracking
+To be able to use the provided eye-tracking implementation you need
+the iViewX SDK, which was originally distributed with scientific
+eye-tracking hardware by Sensomotoric Instruments, now known as
+[Gaze Intelligence](https://gazeintelligence.com/smi-software-download).
+I'm unable to share their their libraries and it wouldn't be much use
+to you anyways without one of their devices.  
+
+Alternatives should be easy enough to integrate, as long as you can
+determine fixation point positions in terms of pixels on the screen
+you're good to go.
+
 
 ### ffmpeg-foveated
 The subtree in `lib/ffmpeg-foveated` contains a patched fork of
@@ -68,9 +89,6 @@ temporary way to override loading symbols from the system libraries:
 ```bash
 export LD_PRELOAD="/path/to/FFoveated/ffmpeg-foveated/libavcodec/libavcodec.so"
 ```
-
-
-
 
 ## Application Scenarios and Limitations
 This is a rather niche project that aims to optimize high quality, low
