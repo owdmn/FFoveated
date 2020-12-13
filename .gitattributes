@@ -1,5 +1,5 @@
 # Override github linguist mislabelings
-ffmpeg-foveated/* linguist-vendored
+/lib/ffmpeg-foveated/* linguist-vendored
 src/*.c linguist-language=C
 src/*.h linguist-language=C
 
