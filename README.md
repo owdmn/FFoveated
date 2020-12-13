@@ -4,11 +4,11 @@ A workbench for developing and researching foveated video codecs and application
 
 ## Foveal Vision :eyes:
 
-The acuity of the human eye rapidly decreases outside of a circular region of
-roughly 2.5° of visual angle around the current center of fixation. We are
-limited to perceive imagery in the periphery at a significantly reduced
-resolution due to the density of photoreceptive cells on the retina.
-A concise introduction to the biological background can be found in
+The acuity of the human eye rapidly decreases outside of a circular region that
+covers roughly 2.5° of visual angle around the current center of fixation. We
+are limited to perceive imagery in the periphery at a significantly reduced
+resolution due to the density of photoreceptive cells on the retina. A concise
+introduction to the biological background can be found in
 [Foundations of Vision](https://foundationsofvision.stanford.edu/chapter-3-the-photoreceptor-mosaic/)
 by Brian A. Wandell, Vision Imaging Science and Technology Lab, Stanford.
 
@@ -26,39 +26,49 @@ one would ideally use feedback from an eye-tracker to steer the compression
 according to an observer's gaze in real time, which ideally renders these
 impairments invisible.
 
+## Implementation
+
+The graphic below displays a conceptual schematic of FFoveated.
+![FFoveated Schematic](https://oliver-wiedemann.net/static/external/github/ffoveated/schematic.png)
+
+Central part is the "foveated encoder", which takes input either directly from
+some sort of live source, e.g. a camera or the display buffer of some render
+engine, or as a raw frame sequence from a previously decoded file. The latter
+is useful to repeatedly evaluate this approach 
+
+
+
 ## Building :hammer:
-The two main components of this project are found in the `ffmpeg-foveated/` and `src/` directories.
+Building FFoveated is *slightly* inconvenient - enhancing this process is on the
+todo list. However, the two main components of this project are found in the
+`ffmpeg-foveated/` and `src/` directories.
 
 ### ffmpeg-foveated
-The subtree in `ffmpeg-foveated` contains a patched fork of
+The subtree in `lib/ffmpeg-foveated` contains a patched fork of
 [FFmpeg](https://ffmpeg.org/), which you can configure and compile its contents
 as follows.  If you already have FFmpeg installed on your system you can save
-time by disabling more compilation targets, however, this can lead to
+time by disabling more compilation targets, however, this might lead to
 compatibility issues in the future.
 
 ```bash
-cd ffmpeg-foveated
+cd lib/ffmpeg-foveated/
 ./configure --enable-avcodec --enable-gpl --enable-libx264 --enable-shared
 make
 ```
 
 ### FFoveated
 
+Building `FFoveated` itself is very straight forward. Just call `make` in `src/`.  
+
 Make sure to **point your linker to these patched FFmpeg libraries**,
-especially `libavcodec`. Setting the `LD_PRELOAD` environment variable is a
+especially `libavcodec`.  
+Setting the `LD_PRELOAD` environment variable is a
 temporary way to override loading symbols from the system libraries:
 
 ```bash
 export LD_PRELOAD="/path/to/FFoveated/ffmpeg-foveated/libavcodec/libavcodec.so"
 ```
 
-
-
-## Implementation Details
-
-  
-![FFoveated Schematic](https://oliver-wiedemann.net/static/external/github/ffoveated/schematic.png)
-  
 
 
 

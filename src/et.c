@@ -19,7 +19,7 @@
 #include "pexit.h"
 #include <SDL2/SDL.h>
 
-#define ET
+//#define ET
 static gaze *gs;
 static lab_setup *ls;
 static SDL_Window *win;
