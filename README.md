@@ -28,6 +28,8 @@ impairments invisible.
 
 ## Implementation
 
+### Workbench
+
 The graphic below displays a conceptual schematic of FFoveated.
 ![FFoveated Schematic](https://oliver-wiedemann.net/static/external/github/ffoveated/schematic.png)
 
@@ -36,7 +38,30 @@ some sort of live source, e.g. a camera or the display buffer of some render
 engine, or as a raw frame sequence from a previously decoded file. The latter
 is useful to repeatedly evaluate this approach with different codec
 parameterizations.
+Its possible and intended to detach the dashed rectangle, which contains the
+"client side" from the encoder through a network connection.
 
+This is implemented as a multi threaded feed-forward structure with
+tightly synchronized FIFO buffers.
+
+![FFoveated Threading](https://oliver-wiedemann.net/static/external/github/ffoveated/threads.png)
+
+From the display thread's perspective, requesting a frame from the decoder
+results in the following (theoretical) stategraph, which is determined due to the
+`AVFrame/AVPacket` handling in FFmpegs [send/receive encodng and decoding API](https://ffmpeg.org/doxygen/trunk/group__lavc__encdec.html):
+
+![FFoveated Stategraph](https://oliver-wiedemann.net/static/external/github/ffoveated/stategraph.png)
+
+The worst non-erroneous case is that a frame is to be displayed and this graph
+fails through all availability checks up until the reader has to demux and supply
+a compressed `AVPacket` to the source decoder first. Depending on codec choices,
+this can lead to multiple cycles of en- and decoding first, before a frame is
+ready to be displayed - thus the asynchronously threaded buffer model presented
+above.
+
+### Foveated Coding in x264
+
+TODO: Complete README.
 
 ## Building :hammer:
 Building FFoveated is *slightly* inconvenient - enhancing this process is on the
