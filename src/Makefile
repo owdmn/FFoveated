@@ -1,5 +1,5 @@
 #### Configurable paths:
-FFMPEG = ../ffmpeg-foveated/
+FFMPEG = ../lib/ffmpeg-foveated/
 ####
 
 CPFLAGS = --no-tree --no-signoff -f --ignore NEW_TYPEDEFS,AVOID_EXTERNS,SPDX_LICENSE_TAG,CONST_STRUCT
