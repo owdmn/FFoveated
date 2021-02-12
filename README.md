@@ -91,29 +91,41 @@ you're good to go.
 
 ### ffmpeg-foveated
 The subtree in `lib/ffmpeg-foveated` contains a patched fork of
-[FFmpeg](https://ffmpeg.org/), which you can configure and compile its contents
-as follows.  If you already have FFmpeg installed on your system you can save
-time by disabling more compilation targets, however, this might lead to
-compatibility issues in the future.
+[FFmpeg](https://ffmpeg.org/). If you already have FFmpeg installed
+on your system you can probably save time by disabling more compilation
+targets, however, this might lead to compatibility issues.
+The following lines will configure and build the required shared libraries:
 
 ```bash
 cd lib/ffmpeg-foveated/
-./configure --enable-avcodec --enable-gpl --enable-libx264 --enable-shared
-make
+./configure --enable-avcodec --enable-gpl --enable-libx264 --enable-shared --enable-debug --libdir=../../src/avlibs
+make install-libs
 ```
 
 ### FFoveated
 
 Building `FFoveated` itself is very straight forward. Just call `make` in `src/`.  
 
-Make sure to **point your linker to these patched FFmpeg libraries**,
-especially `libavcodec`.  
-Setting the `LD_PRELOAD` environment variable is a
-temporary way to override loading symbols from the system libraries:
+Make sure to **point your linker to these patched FFmpeg libraries**.  
+Setting the `LD_LIBRARY_PATH` environment variable is a
+temporary way to override the system libraries:
 
 ```bash
-export LD_PRELOAD="/path/to/FFoveated/ffmpeg-foveated/libavcodec/libavcodec.so"
+export LD_LIBRARY_PATH="/path/to/FFoveated/src/avlibs"
 ```
+you can check that the linker uses the correct files with `ldd`:
+
+```bash
+ldd main
+	linux-vdso.so.1 (0x00007ffc73155000)
+	libavutil.so.56 => /path/to/FFoveated/src/avlibs/libavutil.so.56 (0x00007fa28fdf3000)
+	libavcodec.so.58 => /path/to/FFoveated/src/avlibs/libavcodec.so.58 (0x00007fa28e8e1000)
+	libavdevice.so.58 => /path/to/FFoveated/src/avlibs/libavdevice.so.58 (0x00007fa28e8c7000)
+	libavformat.so.58 => /path/to/FFoveated/src/avlibs/libavformat.so.58 (0x00007fa28e676000)
+	libavfilter.so.7 => /path/to/FFoveated/src/avlibs/libavfilter.so.7 (0x00007fa28e2f7000)
+```
+
+
 
 ## Application Scenarios and Limitations
 This is a rather niche project that aims to optimize high quality, low
