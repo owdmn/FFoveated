@@ -93,14 +93,12 @@ rep_enc_ctx *replicate_encoder_init(enc_id id, dec_ctx *dc, char** xcoords, char
 	return ec;
 }
 
-enc_ctx *encoder_init(enc_id id, dec_ctx *dc, int run, char* path)
+enc_ctx *encoder_init(enc_id id, dec_ctx *dc, char* path)
 {
 	enc_ctx *ec;
 	AVCodecContext *avctx;
 	AVCodec *codec;
 	AVDictionary *options = NULL;
-	char *logpath;
-	char *runbuffer;
 
 	ec = malloc(sizeof(enc_ctx));
 	if (!ec)
@@ -143,9 +141,9 @@ enc_ctx *encoder_init(enc_id id, dec_ctx *dc, int run, char* path)
 	ec->options = options;
 	ec->id = id;
 
-	ec->run = run;
 	ec->path = path;
 
+	#ifdef ET
 	logpath = malloc(512*sizeof(char));
 	if (!logpath)
 		pexit("malloc failed");
@@ -163,6 +161,7 @@ enc_ctx *encoder_init(enc_id id, dec_ctx *dc, int run, char* path)
 	strcat(logpath, ".csv");
 	printf(logpath);
 	ec->log = fopen(logpath, "w");
+	#endif
 
 	return ec;
 }
@@ -198,11 +197,12 @@ void log_message(enc_ctx *ec, char *msg)
 {
 	fprintf(ec->log, msg);
 }
-
+#ifdef ET
 static void log_fov_descr(FILE *f, float* descr, int frameno)
 {
 	fprintf(f, "%d,%f,%f,%f,%f\n", frameno, descr[0], descr[1], descr[2], descr[3]);
 }
+#endif
 
 int replicate_encoder_thread(void *ptr)
 {
@@ -315,7 +315,9 @@ int encoder_thread(void *ptr)
 
 			descr = foveation_descriptor(ec->avctx->width, ec->avctx->height);
 			sd->data = (uint8_t *) descr;
+			#ifdef ET
 			log_fov_descr(ec->log, descr, frame_number);
+			#endif
 			frame_number++;
 
 			frame->pict_type = 0; //keep undefined to prevent warnings

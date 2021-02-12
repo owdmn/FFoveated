@@ -245,7 +245,7 @@ int frame_refresh(win_ctx *wc)
 	if (wc->time_start == -1)
 		wc->time_start = now + 100000;
 
-	//XXX: why is the factor 2 here necessary? Can't find this in the docs, but it works consistently...
+	//XXX: is the factor 2 here necessary? Can't find this in the docs, but it works consistently...
 	upts = (2 * 1000000 * f->pts * wc->time_base.num) / wc->time_base.den; //pts relative to zero
 	uremaining = wc->time_start + upts - now;
 
@@ -256,8 +256,10 @@ int frame_refresh(win_ctx *wc)
 
 	if (uremaining > 0)
 		av_usleep(uremaining);
+	/*
 	else
 		pexit("presentation lag");
+	*/
 
 	SDL_RenderPresent(ren);
 	av_frame_free(&f);

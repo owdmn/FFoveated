@@ -1,11 +1,12 @@
 #### Configurable paths:
-FFMPEG = ../lib/ffmpeg-foveated/
+FFMPEG=../lib/ffmpeg-foveated/
+LIBS=./avlibs/
 ####
 
 CPFLAGS = --no-tree --no-signoff -f --ignore NEW_TYPEDEFS,AVOID_EXTERNS,SPDX_LICENSE_TAG,CONST_STRUCT
 CC = gcc
 CFLAGS= -I$(FFMPEG) -Wall -Wextra -Wpedantic -g
-LDFLAGS= -L$(FFMPEG) -lavutil -lavcodec -lavdevice -lavformat -lSDL2 -lm -g
+LDFLAGS= -L$(LIBS) -lavutil -lavcodec -lavdevice -lavformat -lavfilter -lSDL2 -lm -g
 
 .PHONY: clean checkpatch
 
@@ -22,7 +23,7 @@ debug: main
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 main: io.o codec.o et.o main.o pexit.o queue.o window.o
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 replicate: replicate.o io.o codec.o et.o pexit.o queue.o
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)

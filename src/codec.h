@@ -21,6 +21,7 @@
 #include "io.h"
 #include "et.h"
 #include <libavformat/avformat.h>
+#include <libavutil/frame.h>
 #include <libavutil/time.h>
 
 /**
@@ -78,7 +79,7 @@ typedef struct rep_enc_ctx {
  * @param dc context of the decoder which supplies the frames, to set e.g. the time base.
  * @param w_ctx window context, necessary for pseudo-gaze emulation through the mouse pointer.
  */
-enc_ctx *encoder_init(enc_id id, dec_ctx *dc, int run, char *path);
+enc_ctx *encoder_init(enc_id id, dec_ctx *dc, char *path);
 
 
 /**

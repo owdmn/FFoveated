@@ -40,16 +40,17 @@ dec_ctx *src_dc, *fov_dc;
 enc_ctx *ec;
 win_ctx *wc;
 
-void display_usage(char *progname)
+void display_usage(int argc, char *progname)
 {
-	printf("usage:\n$ %s infile index\n", progname);
+	if (argc != 2) {
+		printf("usage:\n$ %s videofile \n", progname);
+		exit(EXIT_FAILURE);
+	}
 }
 
 /**
  * Loop: Render frames and react to events.
- *
  * Calls pexit in case of a failure.
- * @param w_ctx window_context to which rendering and event handling applies.
  */
 void event_loop(int run)
 {
@@ -100,7 +101,9 @@ void event_loop(int run)
 					printf("run: %d, qp_offset: %f, lift[run]: %d\n", run, qp_offset, lift[run]);
 					qp_offset =  (qp_offset - lift[run]) > 0 ? (qp_offset - lift[run]) : 0;
 					sprintf(msgbuf, "space pressed, setting qp_offset to: %f", qp_offset);
+					#ifdef ET
 					log_message(ec, msgbuf);
+					#endif
 					break;
 			}
 			break;
@@ -114,28 +117,20 @@ int main(int argc, char **argv)
 	char **paths;
 	SDL_Thread *reader, *src_decoder, *encoder, *fov_decoder;
 	const int queue_capacity = 32;
-	int i;
 
-	if (argc != 3) {
-		display_usage(argv[0]);
-		exit(EXIT_FAILURE);
-	}
+	display_usage(argc, argv[0]);
 
 	signal(SIGTERM, exit);
 	signal(SIGINT, exit);
 
-	paths = parse_lines(argv[1]);
 	setup_ivx(LIBX264);
 	wc = window_init();
 	set_ivx_window(wc->window);
 
-	//for (int i = 0; paths[i]; i++) {
-
-	i = atoi(argv[2]);
-	for (int  run = 0; run < 10; run++) {
-		rc = reader_init(paths[i], queue_capacity);
+	for (int run = 0; run < 10; run++) {
+		rc = reader_init(argv[1], queue_capacity);
 		src_dc = source_decoder_init(rc, queue_capacity);
-		ec = encoder_init(LIBX264, src_dc, run, paths[i]);
+		ec = encoder_init(LIBX264, src_dc, argv[1]);
 		fov_dc = fov_decoder_init(ec);
 
 		reader = SDL_CreateThread(reader_thread, "reader", rc);
@@ -151,7 +146,7 @@ int main(int argc, char **argv)
 		SDL_SetWindowFullscreen(wc->window, SDL_WINDOW_FULLSCREEN_DESKTOP);
 		SDL_RaiseWindow(wc->window);
 		set_window_source(wc, fov_dc->frames, ec->timestamps, src_dc->avctx->time_base);
-		event_loop(run);
+		event_loop(0);
 		pause(wc->window);
 	}
 
